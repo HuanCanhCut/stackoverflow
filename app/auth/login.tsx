@@ -1,7 +1,12 @@
 import { GithubIcon, GoogleIcon } from '@/components/icons/Icons'
-import { Link } from 'expo-router'
+import * as authServices from '@/services/authServices'
+import { getErrMessageFromAPI } from '@/utils/handleApiError'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Link, useRouter } from 'expo-router'
+import * as secureStorage from 'expo-secure-store'
 import { Eye, EyeOff, MessageSquareQuote } from 'lucide-react-native'
 import { useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import {
     Keyboard,
     KeyboardAvoidingView,
@@ -14,9 +19,53 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { z } from 'zod'
+
+const loginSchema = z.object({
+    email: z.string().email('Email không hợp lệ'),
+    password: z.string().min(6, 'Ít nhất 6 ký tự'),
+})
+
+type LoginFormData = z.infer<typeof loginSchema>
 
 const LoginPage = () => {
+    const router = useRouter()
+
     const [showPassword, setShowPassword] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
+
+    const {
+        control,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+    } = useForm<LoginFormData>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+        },
+    })
+
+    const onSubmit = async (data: LoginFormData) => {
+        setErrorMessage('')
+        try {
+            const res = await authServices.login({
+                email: data.email,
+                password: data.password,
+            })
+
+            if (res && res.meta) {
+                const { access_token, refresh_token } = res.meta
+
+                secureStorage.setItemAsync('access_token', access_token)
+                secureStorage.setItemAsync('refresh_token', refresh_token)
+            }
+
+            router.push('/home')
+        } catch (error) {
+            setErrorMessage(getErrMessageFromAPI(error))
+        }
+    }
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
@@ -67,34 +116,59 @@ const LoginPage = () => {
                         >
                             <View style={{ gap: 6 }}>
                                 <Text>Email</Text>
-                                <TextInput
-                                    style={{
-                                        borderColor: '#a1a1a170',
-                                        borderWidth: 1,
-                                        borderRadius: 10,
-                                        paddingHorizontal: 10,
-                                        height: 45,
-                                    }}
-                                    inputMode="text"
-                                    placeholder="Nhập email của bạn"
+                                <Controller
+                                    control={control}
+                                    name="email"
+                                    render={({ field: { value, onChange, onBlur } }) => (
+                                        <TextInput
+                                            style={{
+                                                borderColor: '#a1a1a170',
+                                                borderWidth: 1,
+                                                borderRadius: 10,
+                                                paddingHorizontal: 10,
+                                                height: 45,
+                                            }}
+                                            inputMode="text"
+                                            placeholder="Nhập email của bạn"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            onBlur={onBlur}
+                                        />
+                                    )}
                                 />
+
+                                {errors.email && <Text style={{ color: 'red' }}>{errors.email.message}</Text>}
                             </View>
 
                             <View style={{ gap: 6, marginTop: 20 }}>
                                 <Text>Mật khẩu</Text>
                                 <View style={{ position: 'relative' }}>
-                                    <TextInput
-                                        style={{
-                                            borderColor: '#a1a1a170',
-                                            borderWidth: 1,
-                                            borderRadius: 10,
-                                            paddingHorizontal: 10,
-                                            paddingRight: 40,
-                                            height: 45,
-                                        }}
-                                        secureTextEntry={!showPassword}
-                                        placeholder="Nhập mật khẩu của bạn"
+                                    <Controller
+                                        control={control}
+                                        name="password"
+                                        render={({ field: { value, onChange, onBlur } }) => (
+                                            <TextInput
+                                                style={{
+                                                    borderColor: '#a1a1a170',
+                                                    borderWidth: 1,
+                                                    borderRadius: 10,
+                                                    paddingHorizontal: 10,
+                                                    paddingRight: 40,
+                                                    height: 45,
+                                                }}
+                                                secureTextEntry={!showPassword}
+                                                placeholder="Nhập mật khẩu của bạn"
+                                                value={value}
+                                                onChangeText={onChange}
+                                                onBlur={onBlur}
+                                            />
+                                        )}
                                     />
+
+                                    {errors.password && (
+                                        <Text style={{ color: 'red', marginTop: 6 }}>{errors.password.message}</Text>
+                                    )}
+
                                     <Pressable
                                         onPress={() => setShowPassword((prev) => !prev)}
                                         style={{
@@ -108,6 +182,9 @@ const LoginPage = () => {
                                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </Pressable>
                                 </View>
+
+                                {errorMessage && <Text style={{ color: 'red' }}>{errorMessage}</Text>}
+
                                 <Link
                                     href={'/auth/login'}
                                     style={{ marginTop: 10, textAlign: 'right', color: '#0969da' }}
@@ -116,6 +193,7 @@ const LoginPage = () => {
                                 </Link>
 
                                 <Pressable
+                                    disabled={isSubmitting}
                                     style={({ pressed }) => {
                                         return [
                                             {
@@ -129,6 +207,7 @@ const LoginPage = () => {
                                             },
                                         ]
                                     }}
+                                    onPress={handleSubmit(onSubmit)}
                                 >
                                     <Text style={{ color: 'white' }}>Đăng nhập</Text>
                                 </Pressable>
