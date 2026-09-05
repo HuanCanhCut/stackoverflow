@@ -1,4 +1,6 @@
 import { GithubIcon, GoogleIcon } from '@/components/icons/Icons'
+import { setCurrentUser } from '@/redux/reducers/authSlice'
+import { useAppDispatch } from '@/redux/redux.type'
 import * as authServices from '@/services/authServices'
 import { getErrMessageFromAPI } from '@/utils/handleApiError'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -19,6 +21,7 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { toast } from 'sonner-native'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -29,6 +32,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 
 const LoginPage = () => {
+    const dispatch = useAppDispatch()
+
     const router = useRouter()
 
     const [showPassword, setShowPassword] = useState(false)
@@ -61,7 +66,11 @@ const LoginPage = () => {
                 secureStorage.setItemAsync('refresh_token', refresh_token)
             }
 
-            router.push('/home')
+            dispatch(setCurrentUser(res.data))
+
+            toast.success('Đăng nhập thành công')
+
+            router.push('/')
         } catch (error) {
             setErrorMessage(getErrMessageFromAPI(error))
         }
@@ -185,10 +194,7 @@ const LoginPage = () => {
 
                                 {errorMessage && <Text style={{ color: 'red' }}>{errorMessage}</Text>}
 
-                                <Link
-                                    href={'/auth/login'}
-                                    style={{ marginTop: 10, textAlign: 'right', color: '#0969da' }}
-                                >
+                                <Link href={'/login'} style={{ marginTop: 10, textAlign: 'right', color: '#0969da' }}>
                                     Quên mật khẩu?
                                 </Link>
 

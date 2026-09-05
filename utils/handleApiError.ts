@@ -1,5 +1,5 @@
 import { AxiosError } from 'axios'
-import Toast from 'react-native-toast-message'
+import { toast } from 'sonner-native'
 
 interface ValidationErrorItem {
     field: string
@@ -43,10 +43,9 @@ export const getErrMessageFromAPI = (error: any) => {
 const handleApiError = (error: any, message?: string, toastId?: string | number) => {
     const errorMessage = message || getErrMessageFromAPI(error)
 
-    Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: errorMessage,
+    toast.error('Lỗi', {
+        description: errorMessage,
+        id: toastId,
     })
 }
 

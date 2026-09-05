@@ -1,4 +1,4 @@
-import { BaseModel } from './common.type'
+import { BaseModel } from '../common.type'
 
 export interface UserModel extends BaseModel {
     first_name: string

@@ -8,3 +8,5 @@ export type LoginResponse = ApiResponse<
         refresh_token: string
     }
 >
+
+export type GetCurrentUserResponse = ApiResponse<UserModel>
