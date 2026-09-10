@@ -25,35 +25,50 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { toast } from 'sonner-native'
 import { z } from 'zod'
 
-const loginSchema = z.object({
-    email: z.string().email('Email không hợp lệ'),
-    password: z.string().min(6, 'Ít nhất 6 ký tự'),
-})
+const registerSchema = z
+    .object({
+        full_name: z
+            .string()
+            .trim()
+            .min(1, 'Họ và tên không được để trống')
+            .refine((val) => val.trim().split(/\s+/).filter(Boolean).length >= 2, 'Họ và tên phải có ít nhất 2 từ'),
+        email: z.string().email('Email không hợp lệ'),
+        password: z.string().min(6, 'Ít nhất 6 ký tự'),
+        confirm_password: z.string().min(1, 'Vui lòng nhập lại mật khẩu'),
+    })
+    .refine((data) => data.password === data.confirm_password, {
+        message: 'Mật khẩu nhập lại không khớp',
+        path: ['confirm_password'],
+    })
 
-type LoginFormData = z.infer<typeof loginSchema>
+type RegisterFormData = z.infer<typeof registerSchema>
 
-const LoginPage = () => {
+const RegisterPage = () => {
     const dispatch = useAppDispatch()
 
     const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
 
     const {
         control,
         handleSubmit,
         formState: { errors, isSubmitting },
-    } = useForm<LoginFormData>({
-        resolver: zodResolver(loginSchema),
+    } = useForm<RegisterFormData>({
+        resolver: zodResolver(registerSchema),
         defaultValues: {
+            full_name: '',
             email: '',
             password: '',
+            confirm_password: '',
         },
     })
 
-    const onSubmit = async (data: LoginFormData) => {
+    const onSubmit = async (data: RegisterFormData) => {
         setErrorMessage('')
         try {
-            const res = await authServices.login({
+            const res = await authServices.register({
+                full_name: data.full_name,
                 email: data.email,
                 password: data.password,
             })
@@ -67,9 +82,9 @@ const LoginPage = () => {
 
             dispatch(setCurrentUser(res.data))
 
-            toast.success('Đăng nhập thành công')
+            toast.success('Đăng ký tài khoản thành công')
 
-            // Không cần navigate vì stack.protected sẽ tự handle về home
+            // Không cần navigate vì stack.protected sẽ tự handle về home khi currentUser thay đổi
         } catch (error) {
             const err = getErrMessageFromAPI(error)
             setErrorMessage(err)
@@ -92,11 +107,32 @@ const LoginPage = () => {
                             <Text className="text-2xl font-bold">AskHub</Text>
                         </View>
                         <View className="gap-1.5">
-                            <Text className="text-2xl font-bold">Đăng nhập</Text>
-                            <Text className="text-muted-foreground">Chào mừng bạn quay trở lại với AskHub</Text>
+                            <Text className="text-2xl font-bold">Đăng ký</Text>
+                            <Text className="text-muted-foreground">Tạo tài khoản để tham gia cộng đồng AskHub</Text>
                         </View>
                         <View className="p-[30px] bg-white rounded-[20px] w-full mt-5 border border-[#a1a1a170]">
                             <View className="gap-1.5">
+                                <Text className="font-medium text-sm">Họ và tên</Text>
+                                <Controller
+                                    control={control}
+                                    name="full_name"
+                                    render={({ field: { value, onChange, onBlur } }) => (
+                                        <Input
+                                            className="border-[#a1a1a170] rounded-[10px] px-2.5 h-[45px] text-sm"
+                                            autoCapitalize="words" // Tự động viết hoa cho chữ cái đầu tiên của mỗi từ
+                                            placeholder="Nhập họ và tên của bạn"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            onBlur={onBlur}
+                                        />
+                                    )}
+                                />
+                                {errors.full_name && (
+                                    <Text className="text-destructive text-sm mt-1">{errors.full_name.message}</Text>
+                                )}
+                            </View>
+
+                            <View className="gap-1.5 mt-5">
                                 <Text className="font-medium text-sm">Email</Text>
                                 <Controller
                                     control={control}
@@ -119,7 +155,6 @@ const LoginPage = () => {
                                 )}
                             </View>
 
-                            {/* Password field */}
                             <View className="gap-1.5 mt-5">
                                 <Text className="font-medium text-sm">Mật khẩu</Text>
                                 <View className="relative justify-center">
@@ -149,31 +184,61 @@ const LoginPage = () => {
                                         )}
                                     </Pressable>
                                 </View>
+                                {errors.password && (
+                                    <Text className="text-destructive text-sm mt-1">{errors.password.message}</Text>
+                                )}
                             </View>
 
-                            {errors.password && (
-                                <Text className="text-destructive text-sm mt-1">{errors.password.message}</Text>
-                            )}
+                            <View className="gap-1.5 mt-5">
+                                <Text className="font-medium text-sm">Nhập lại mật khẩu</Text>
+                                <View className="relative justify-center">
+                                    <Controller
+                                        control={control}
+                                        name="confirm_password"
+                                        render={({ field: { value, onChange, onBlur } }) => (
+                                            <Input
+                                                className="border-[#a1a1a170] rounded-[10px] pl-2.5 pr-11 h-[45px] text-sm"
+                                                secureTextEntry={!showConfirmPassword}
+                                                placeholder="Nhập lại mật khẩu của bạn"
+                                                value={value}
+                                                onChangeText={onChange}
+                                                onBlur={onBlur}
+                                            />
+                                        )}
+                                    />
+
+                                    <Pressable
+                                        onPress={() => setShowConfirmPassword((prev) => !prev)}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2"
+                                    >
+                                        {showConfirmPassword ? (
+                                            <EyeOff size={20} color="#666" />
+                                        ) : (
+                                            <Eye size={20} color="#666" />
+                                        )}
+                                    </Pressable>
+                                </View>
+                                {errors.confirm_password && (
+                                    <Text className="text-destructive text-sm mt-1">
+                                        {errors.confirm_password.message}
+                                    </Text>
+                                )}
+                            </View>
 
                             {errorMessage && <Text className="text-destructive text-sm mt-3">{errorMessage}</Text>}
-
-                            <Link href={'/forgot-password'} asChild>
-                                <Pressable className="mt-2.5 self-end">
-                                    <Text className="text-[#0969da] text-sm">Quên mật khẩu?</Text>
-                                </Pressable>
-                            </Link>
 
                             <Button
                                 className="mt-8 h-[45px] rounded-[10px] bg-black active:bg-black/90"
                                 disabled={isSubmitting}
                                 onPress={handleSubmit(onSubmit)}
                             >
-                                {isSubmitting ? <Spinner /> : <Text className="text-white font-medium">Đăng nhập</Text>}
+                                {isSubmitting ? <Spinner /> : <Text className="text-white font-medium">Đăng ký</Text>}
                             </Button>
+
                             <Text className="text-center mt-5 text-muted-foreground text-sm">
-                                Bạn chưa có tài khoản?{' '}
-                                <Link href={'/register'} className="font-medium" asChild>
-                                    <Text className="text-[#0969da] text-sm">Đăng ký</Text>
+                                Bạn đã có tài khoản?{' '}
+                                <Link href={'/login'} className="font-medium" asChild>
+                                    <Text className="text-[#0969da] text-sm">Đăng nhập</Text>
                                 </Link>
                             </Text>
                         </View>
@@ -184,4 +249,4 @@ const LoginPage = () => {
     )
 }
 
-export default LoginPage
+export default RegisterPage

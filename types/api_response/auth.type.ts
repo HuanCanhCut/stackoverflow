@@ -9,4 +9,6 @@ export type LoginResponse = ApiResponse<
     }
 >
 
+export type RegisterResponse = LoginResponse
+
 export type GetCurrentUserResponse = ApiResponse<UserModel>

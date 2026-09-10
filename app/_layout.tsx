@@ -18,7 +18,7 @@ import { useEffect } from 'react'
 import { getCurrentUser } from '@/redux/reducers/authSlice'
 
 export const unstable_settings = {
-    initialRouteName: '(auth)/login',
+    initialRouteName: '/login',
 }
 
 function RootNavigator() {
