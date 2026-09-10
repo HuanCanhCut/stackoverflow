@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "stackoverflow",
-    "newArchEnabled": true,
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
@@ -20,7 +19,6 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "userInterfaceStyle": "light",
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -42,7 +40,11 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

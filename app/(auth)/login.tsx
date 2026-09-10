@@ -54,10 +54,14 @@ const LoginPage = () => {
     const onSubmit = async (data: LoginFormData) => {
         setErrorMessage('')
         try {
+            console.log('calling api')
+
             const res = await authServices.login({
                 email: data.email,
                 password: data.password,
             })
+
+            console.log('called api')
 
             if (res && res.meta) {
                 const { access_token, refresh_token } = res.meta
@@ -72,6 +76,8 @@ const LoginPage = () => {
 
             router.push('/')
         } catch (error) {
+            console.log(error)
+
             setErrorMessage(getErrMessageFromAPI(error))
         }
     }

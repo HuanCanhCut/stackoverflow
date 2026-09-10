@@ -1,6 +1,8 @@
+import { isAxiosError } from 'axios'
 import { UserModel } from '@/types/model/user.type'
 import { createSlice, type Dispatch } from '@reduxjs/toolkit'
 import * as meService from '@/services/meService'
+import { toast } from 'sonner-native'
 
 const initialState: {
     currentUser: UserModel | null
@@ -24,7 +26,12 @@ export const getCurrentUser = () => {
             const { data } = await meService.getCurrentUser()
 
             dispatch(setCurrentUser(data))
-        } catch (_) {
+        } catch (error) {
+            if (isAxiosError(error) && !error.response) {
+                toast.error('Không thể kết nối đến máy chủ')
+                return
+            }
+
             dispatch(setCurrentUser(null))
         }
     }
