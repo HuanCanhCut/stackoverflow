@@ -1510,6 +1510,11 @@
   dependencies:
     zustand "^5.0.4"
 
+"@rn-primitives/slot@^1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@rn-primitives/slot/-/slot-1.5.2.tgz#f74d8ab7b06fda13c76db6392367eb2f9fc03d47"
+  integrity sha512-TGSMB8hMALrcI6d5logiS8/0YzPRUQvsHghaF7FAuia+MF84WZS96Jvm959W4sDEP26AiDJtuQfCkTHOv0oxbw==
+
 "@rtsao/scc@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@rtsao/scc/-/scc-1.1.0.tgz#927dd2fae9bc3361403ac2c7a00c32ddce9ad7e8"

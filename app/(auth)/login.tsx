@@ -1,4 +1,8 @@
 import { GithubIcon, GoogleIcon } from '@/components/icons/Icons'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import { Text } from '@/components/ui/text'
 import { setCurrentUser } from '@/redux/reducers/authSlice'
 import { useAppDispatch } from '@/redux/redux.type'
 import * as authServices from '@/services/authServices'
@@ -15,8 +19,6 @@ import {
     Platform,
     Pressable,
     ScrollView,
-    Text,
-    TextInput,
     TouchableWithoutFeedback,
     View,
 } from 'react-native'
@@ -33,7 +35,6 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 const LoginPage = () => {
     const dispatch = useAppDispatch()
-
     const router = useRouter()
 
     const [showPassword, setShowPassword] = useState(false)
@@ -66,84 +67,55 @@ const LoginPage = () => {
             if (res && res.meta) {
                 const { access_token, refresh_token } = res.meta
 
-                secureStorage.setItemAsync('access_token', access_token)
-                secureStorage.setItemAsync('refresh_token', refresh_token)
+                await secureStorage.setItemAsync('access_token', access_token)
+                await secureStorage.setItemAsync('refresh_token', refresh_token)
             }
 
             dispatch(setCurrentUser(res.data))
-
             toast.success('Đăng nhập thành công')
 
             router.push('/')
         } catch (error) {
             console.log(error)
-
-            setErrorMessage(getErrMessageFromAPI(error))
+            const err = getErrMessageFromAPI(error)
+            setErrorMessage(err)
+            toast.error(err)
         }
     }
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <SafeAreaView className="flex-1 bg-background">
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <ScrollView
-                        contentContainerStyle={{
-                            flexGrow: 1,
-                            justifyContent: 'center',
-                            paddingVertical: 20,
-                            gap: 15,
-                            paddingHorizontal: 20,
-                        }}
+                        contentContainerClassName="flex-grow justify-center py-5 px-5 gap-[15px]"
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
                     >
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                                justifyContent: 'flex-start',
-                                alignItems: 'center',
-                                gap: 8,
-                                width: '100%',
-                            }}
-                        >
-                            <View style={{ padding: 8, backgroundColor: '#0969da', borderRadius: 10 }}>
-                                <MessageSquareQuote size={24} color={'white'} />
+                        <View className="flex-row items-center justify-start gap-2 w-full">
+                            <View className="p-2 bg-[#0969da] rounded-[10px]">
+                                <MessageSquareQuote size={24} color="white" />
                             </View>
-                            <Text style={{ fontSize: 24, fontWeight: 'bold' }}>AskHub</Text>
+                            <Text className="text-2xl font-bold">AskHub</Text>
                         </View>
 
-                        <View style={{ gap: 6 }}>
-                            <Text style={{ fontWeight: '700', fontSize: 24 }}>Đăng nhập</Text>
-                            <Text>Chào mừng bạn quay trở lại với AskHub</Text>
+                        <View className="gap-1.5">
+                            <Text className="text-2xl font-bold">Đăng nhập</Text>
+                            <Text className="text-muted-foreground">Chào mừng bạn quay trở lại với AskHub</Text>
                         </View>
 
-                        <View
-                            style={{
-                                padding: 30,
-                                backgroundColor: 'white',
-                                borderRadius: 20,
-                                height: 'auto',
-                                width: '100%',
-                                marginTop: 20,
-                                borderWidth: 1,
-                                borderColor: '#a1a1a170',
-                            }}
-                        >
-                            <View style={{ gap: 6 }}>
-                                <Text>Email</Text>
+                        <View className="p-[30px] bg-white dark:bg-card rounded-[20px] w-full mt-5 border border-[#a1a1a170] dark:border-border">
+                            <View className="gap-1.5">
+                                <Text className="font-medium text-sm">Email</Text>
                                 <Controller
                                     control={control}
                                     name="email"
                                     render={({ field: { value, onChange, onBlur } }) => (
-                                        <TextInput
-                                            style={{
-                                                borderColor: '#a1a1a170',
-                                                borderWidth: 1,
-                                                borderRadius: 10,
-                                                paddingHorizontal: 10,
-                                                height: 45,
-                                            }}
-                                            inputMode="text"
+                                        <Input
+                                            className="border-[#a1a1a170] rounded-[10px] px-2.5 h-[45px] text-sm"
+                                            inputMode="email"
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
                                             placeholder="Nhập email của bạn"
                                             value={value}
                                             onChangeText={onChange}
@@ -151,26 +123,21 @@ const LoginPage = () => {
                                         />
                                     )}
                                 />
-
-                                {errors.email && <Text style={{ color: 'red' }}>{errors.email.message}</Text>}
+                                {errors.email && (
+                                    <Text className="text-destructive text-sm mt-1">{errors.email.message}</Text>
+                                )}
                             </View>
 
-                            <View style={{ gap: 6, marginTop: 20 }}>
-                                <Text>Mật khẩu</Text>
-                                <View style={{ position: 'relative' }}>
+                            {/* Password field */}
+                            <View className="gap-1.5 mt-5">
+                                <Text className="font-medium text-sm">Mật khẩu</Text>
+                                <View className="relative justify-center">
                                     <Controller
                                         control={control}
                                         name="password"
                                         render={({ field: { value, onChange, onBlur } }) => (
-                                            <TextInput
-                                                style={{
-                                                    borderColor: '#a1a1a170',
-                                                    borderWidth: 1,
-                                                    borderRadius: 10,
-                                                    paddingHorizontal: 10,
-                                                    paddingRight: 40,
-                                                    height: 45,
-                                                }}
+                                            <Input
+                                                className="border-[#a1a1a170] rounded-[10px] pl-2.5 pr-11 h-[45px] text-sm"
                                                 secureTextEntry={!showPassword}
                                                 placeholder="Nhập mật khẩu của bạn"
                                                 value={value}
@@ -180,124 +147,70 @@ const LoginPage = () => {
                                         )}
                                     />
 
-                                    {errors.password && (
-                                        <Text style={{ color: 'red', marginTop: 6 }}>{errors.password.message}</Text>
-                                    )}
-
                                     <Pressable
                                         onPress={() => setShowPassword((prev) => !prev)}
-                                        style={{
-                                            position: 'absolute',
-                                            right: 4,
-                                            top: '50%',
-                                            transform: [{ translateY: '-50%' }],
-                                            padding: 10,
-                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2"
                                     >
-                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        {showPassword ? (
+                                            <EyeOff size={20} color="#666" />
+                                        ) : (
+                                            <Eye size={20} color="#666" />
+                                        )}
                                     </Pressable>
                                 </View>
 
-                                {errorMessage && <Text style={{ color: 'red' }}>{errorMessage}</Text>}
+                                {errors.password && (
+                                    <Text className="text-destructive text-sm mt-1">{errors.password.message}</Text>
+                                )}
+                            </View>
 
-                                <Link href={'/login'} style={{ marginTop: 10, textAlign: 'right', color: '#0969da' }}>
-                                    Quên mật khẩu?
-                                </Link>
+                            {errorMessage && <Text className="text-destructive text-sm mt-3">{errorMessage}</Text>}
 
-                                <Pressable
-                                    disabled={isSubmitting}
-                                    style={({ pressed }) => {
-                                        return [
-                                            {
-                                                backgroundColor: '#000',
-                                                borderRadius: 10,
-                                                height: 45,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                marginTop: 20,
-                                                opacity: pressed ? 0.9 : 1,
-                                            },
-                                        ]
-                                    }}
-                                    onPress={handleSubmit(onSubmit)}
-                                >
-                                    <Text style={{ color: 'white' }}>Đăng nhập</Text>
+                            <Link href={'/login'} asChild>
+                                <Pressable className="mt-2.5 self-end">
+                                    <Text className="text-[#0969da] text-sm">Quên mật khẩu?</Text>
                                 </Pressable>
+                            </Link>
+
+                            <Button
+                                className="mt-5 h-[45px] rounded-[10px] bg-black active:bg-black/90"
+                                disabled={isSubmitting}
+                                onPress={handleSubmit(onSubmit)}
+                            >
+                                {isSubmitting ? <Spinner /> : <Text className="text-white font-medium">Đăng nhập</Text>}
+                            </Button>
+
+                            <View className="flex-row items-center gap-2.5 mt-5">
+                                <View className="flex-1 h-[1px] bg-[#a1a1a170]" />
+                                <Text className="text-muted-foreground text-sm">Hoặc tiếp tục với</Text>
+                                <View className="flex-1 h-[1px] bg-[#a1a1a170]" />
                             </View>
 
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    gap: 10,
-                                    marginTop: 20,
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        flex: 1,
-                                        height: 1,
-                                        backgroundColor: '#a1a1a170',
-                                    }}
-                                />
-                                <Text>Hoặc tiếp tục với</Text>
-                                <View
-                                    style={{
-                                        flex: 1,
-                                        height: 1,
-                                        backgroundColor: '#a1a1a170',
-                                    }}
-                                />
-                            </View>
-
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    gap: 20,
-                                    marginTop: 20,
-                                }}
-                            >
-                                <Pressable
-                                    style={{
-                                        backgroundColor: 'white',
-                                        borderRadius: 10,
-                                        height: 45,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flex: 1,
-                                        borderWidth: 1,
-                                        borderColor: '#a1a1a170',
-                                    }}
+                            <View className="flex-row items-center gap-5 mt-5">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-[45px] rounded-[10px] border-[#a1a1a170] bg-white active:bg-accent"
                                 >
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <View className="flex-row items-center gap-2">
                                         <GoogleIcon />
-                                        <Text style={{ color: 'black' }}>Google</Text>
+                                        <Text className="text-foreground font-medium">Google</Text>
                                     </View>
-                                </Pressable>
+                                </Button>
 
-                                <Pressable
-                                    style={{
-                                        backgroundColor: 'white',
-                                        borderRadius: 10,
-                                        height: 45,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flex: 1,
-                                        borderWidth: 1,
-                                        borderColor: '#a1a1a170',
-                                    }}
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-[45px] rounded-[10px] border-[#a1a1a170] bg-white active:bg-accent"
                                 >
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <View className="flex-row items-center gap-2">
                                         <GithubIcon />
-                                        <Text style={{ color: 'black' }}>Github</Text>
+                                        <Text className="text-foreground font-medium">Github</Text>
                                     </View>
-                                </Pressable>
+                                </Button>
                             </View>
                         </View>
 
-                        <Text style={{ textAlign: 'center', marginTop: 20 }}>
-                            Bạn chưa có tài khoản? <Text style={{ color: '#0969da' }}>Đăng ký</Text>
+                        <Text className="text-center mt-5 text-muted-foreground">
+                            Bạn chưa có tài khoản? <Text className="text-[#0969da] font-medium">Đăng ký</Text>
                         </Text>
                     </ScrollView>
                 </TouchableWithoutFeedback>
