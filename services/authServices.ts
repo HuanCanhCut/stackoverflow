@@ -27,3 +27,30 @@ export const register = async ({
 
     return res.data
 }
+
+export const sendForgotPasswordCode = async ({ email }: { email: string }): Promise<void> => {
+    const res = await axiosClient.post('/auth/forgot-password/code', {
+        email,
+    })
+
+    return res.data
+}
+
+export const resetPassword = async ({
+    email,
+    password,
+    code,
+}: {
+    email: string
+    password: string
+    code: number
+}): Promise<void> => {
+    const res = await axiosClient.post('/auth/reset-password', {
+        email,
+        password,
+        code,
+    })
+
+    return res.data
+}
+

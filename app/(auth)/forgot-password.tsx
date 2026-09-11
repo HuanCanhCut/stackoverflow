@@ -2,15 +2,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text'
-import { setCurrentUser } from '@/redux/reducers/authSlice'
-import { useAppDispatch } from '@/redux/redux.type'
 import * as authServices from '@/services/authServices'
 import { getErrMessageFromAPI } from '@/utils/handleApiError'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useRouter } from 'expo-router'
-import * as secureStorage from 'expo-secure-store'
 import { Eye, EyeOff, MessageSquareQuote } from 'lucide-react-native'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import {
     Keyboard,
@@ -25,56 +22,95 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { toast } from 'sonner-native'
 import { z } from 'zod'
 
-const loginSchema = z.object({
-    email: z.string().email('Email không hợp lệ'),
-    password: z.string().min(6, 'Ít nhất 6 ký tự'),
-})
+const forgotPasswordSchema = z
+    .object({
+        email: z.string().email('Email không đúng định dạng'),
+        code: z
+            .string()
+            .min(1, 'Vui lòng nhập mã xác minh')
+            .regex(/^\d{6}$/, 'Mã xác minh phải có đúng 6 chữ số'),
+        password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+        confirmPassword: z.string().min(6, 'Xác nhận mật khẩu phải có ít nhất 6 ký tự'),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: 'Mật khẩu xác nhận không khớp',
+        path: ['confirmPassword'],
+    })
 
-type LoginFormData = z.infer<typeof loginSchema>
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 
 const ForgotPassword = () => {
-    const dispatch = useAppDispatch()
     const router = useRouter()
 
     const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
+    const [countdown, setCountdown] = useState(0)
+    const [isSendingCode, setIsSendingCode] = useState(false)
+
+    useEffect(() => {
+        if (countdown <= 0) return
+
+        const timer = setTimeout(() => {
+            setCountdown((prev) => prev - 1)
+        }, 1000)
+
+        return () => clearTimeout(timer)
+    }, [countdown])
 
     const {
         control,
         handleSubmit,
+        trigger,
+        getValues,
         formState: { errors, isSubmitting },
-    } = useForm<LoginFormData>({
-        resolver: zodResolver(loginSchema),
+    } = useForm<ForgotPasswordFormData>({
+        resolver: zodResolver(forgotPasswordSchema),
         defaultValues: {
             email: '',
+            code: '',
             password: '',
+            confirmPassword: '',
         },
     })
 
-    const onSubmit = async (data: LoginFormData) => {
+    const handleSendCode = async () => {
+        const email = getValues('email')
+        if (!email) {
+            toast.error('Vui lòng nhập email trước khi gửi mã')
+            return
+        }
+
+        const isEmailValid = await trigger('email')
+        if (!isEmailValid) return
+
+        try {
+            setIsSendingCode(true)
+            await authServices.sendForgotPasswordCode({ email })
+            toast.success('Mã xác thực đã được gửi đến email của bạn')
+            setCountdown(60)
+        } catch (error) {
+            const err = getErrMessageFromAPI(error)
+            toast.error(err)
+        } finally {
+            setIsSendingCode(false)
+        }
+    }
+
+    const onSubmit = async (data: ForgotPasswordFormData) => {
         setErrorMessage('')
         try {
-            const res = await authServices.login({
+            await authServices.resetPassword({
                 email: data.email,
                 password: data.password,
+                code: Number(data.code),
             })
 
-            if (res && res.meta) {
-                const { access_token, refresh_token } = res.meta
-
-                await secureStorage.setItemAsync('access_token', access_token)
-                await secureStorage.setItemAsync('refresh_token', refresh_token)
-            }
-
-            dispatch(setCurrentUser(res.data))
-            toast.success('Đăng nhập thành công')
-
-            router.push('/')
+            toast.success('Đổi mật khẩu thành công! Vui lòng đăng nhập.')
+            router.replace('/login')
         } catch (error) {
-            console.log(error)
             const err = getErrMessageFromAPI(error)
             setErrorMessage(err)
-            toast.error(err)
         }
     }
 
@@ -103,6 +139,7 @@ const ForgotPassword = () => {
                         </View>
 
                         <View className="p-[30px] bg-white rounded-[20px] w-full mt-5 border border-[#a1a1a170]">
+                            {/* Email field */}
                             <View className="gap-1.5">
                                 <Text className="font-medium text-sm">Email</Text>
                                 <Controller
@@ -126,16 +163,19 @@ const ForgotPassword = () => {
                                 )}
                             </View>
 
+                            {/* Verification Code field */}
                             <View className="gap-1.5 mt-5">
                                 <Text className="font-medium text-sm">Mã xác minh</Text>
                                 <View className="flex-row items-center gap-1 w-full">
                                     <Controller
                                         control={control}
-                                        name="password"
+                                        name="code"
                                         render={({ field: { value, onChange, onBlur } }) => (
                                             <Input
                                                 className="flex-1 border-[#a1a1a170] rounded-[10px] px-2.5 h-[45px] text-sm"
-                                                placeholder="Nhập mã xác minh"
+                                                placeholder="Nhập mã xác minh 6 số"
+                                                keyboardType="number-pad"
+                                                maxLength={6}
                                                 value={value}
                                                 onChangeText={onChange}
                                                 onBlur={onBlur}
@@ -143,13 +183,26 @@ const ForgotPassword = () => {
                                         )}
                                     />
 
-                                    <Button className="bg-black active:bg-black/90 h-[45px] rounded-[10px] px-4 shrink-0">
-                                        <Text className="text-white font-medium text-sm">Gửi mã</Text>
+                                    <Button
+                                        className="bg-black active:bg-black/90 h-[45px] rounded-[10px] px-4 shrink-0"
+                                        disabled={countdown > 0 || isSendingCode}
+                                        onPress={handleSendCode}
+                                    >
+                                        {isSendingCode ? (
+                                            <Spinner />
+                                        ) : (
+                                            <Text className="text-white font-medium text-sm">
+                                                {countdown > 0 ? `Gửi lại (${countdown}s)` : 'Gửi mã'}
+                                            </Text>
+                                        )}
                                     </Button>
                                 </View>
+                                {errors.code && (
+                                    <Text className="text-destructive text-sm mt-1">{errors.code.message}</Text>
+                                )}
                             </View>
 
-                            {/* Password field */}
+                            {/* New Password field */}
                             <View className="gap-1.5 mt-5">
                                 <Text className="font-medium text-sm">Mật khẩu mới</Text>
                                 <View className="relative justify-center">
@@ -179,23 +232,22 @@ const ForgotPassword = () => {
                                         )}
                                     </Pressable>
                                 </View>
+                                {errors.password && (
+                                    <Text className="text-destructive text-sm mt-1">{errors.password.message}</Text>
+                                )}
                             </View>
 
-                            {errors.password && (
-                                <Text className="text-destructive text-sm mt-1">{errors.password.message}</Text>
-                            )}
-
-                            {/* Password field */}
+                            {/* Confirm Password field */}
                             <View className="gap-1.5 mt-5">
                                 <Text className="font-medium text-sm">Xác nhận mật khẩu mới</Text>
                                 <View className="relative justify-center">
                                     <Controller
                                         control={control}
-                                        name="password"
+                                        name="confirmPassword"
                                         render={({ field: { value, onChange, onBlur } }) => (
                                             <Input
                                                 className="border-[#a1a1a170] rounded-[10px] pl-2.5 pr-11 h-[45px] text-sm"
-                                                secureTextEntry={!showPassword}
+                                                secureTextEntry={!showConfirmPassword}
                                                 placeholder="Xác nhận mật khẩu mới"
                                                 value={value}
                                                 onChangeText={onChange}
@@ -205,16 +257,21 @@ const ForgotPassword = () => {
                                     />
 
                                     <Pressable
-                                        onPress={() => setShowPassword((prev) => !prev)}
+                                        onPress={() => setShowConfirmPassword((prev) => !prev)}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 p-2"
                                     >
-                                        {showPassword ? (
+                                        {showConfirmPassword ? (
                                             <EyeOff size={20} color="#666" />
                                         ) : (
                                             <Eye size={20} color="#666" />
                                         )}
                                     </Pressable>
                                 </View>
+                                {errors.confirmPassword && (
+                                    <Text className="text-destructive text-sm mt-1">
+                                        {errors.confirmPassword.message}
+                                    </Text>
+                                )}
                             </View>
 
                             {errorMessage && <Text className="text-destructive text-sm mt-3">{errorMessage}</Text>}
@@ -232,12 +289,14 @@ const ForgotPassword = () => {
                             </Button>
                         </View>
 
-                        <Text className="text-center mt-5 text-muted-foreground">
-                            Bạn chưa có tài khoản?{' '}
-                            <Link href={'/register'} asChild>
-                                <Text className="text-[#0969da] font-medium">Đăng ký</Text>
-                            </Link>
-                        </Text>
+                        <View className="items-center gap-2 mt-5">
+                            <Text className="text-center text-muted-foreground">
+                                Bạn chưa có tài khoản?{' '}
+                                <Link href={'/register'} asChild>
+                                    <Text className="text-[#0969da] font-medium">Đăng ký</Text>
+                                </Link>
+                            </Text>
+                        </View>
                     </ScrollView>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
