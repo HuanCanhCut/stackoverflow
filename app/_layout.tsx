@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router'
+import { Stack, useSegments } from 'expo-router'
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -16,13 +16,15 @@ import { selectCurrentUser } from '@/redux/selector'
 import { Toaster } from 'sonner-native'
 import { useEffect } from 'react'
 import { getCurrentUser } from '@/redux/reducers/authSlice'
+import BottomNavigation from '@/components/bottom-navigation'
 
 export const unstable_settings = {
-    initialRouteName: '/login',
+    initialRouteName: '(public)',
 }
 
 function RootNavigator() {
     const currentUser = useAppSelector(selectCurrentUser)
+    const [rootSegment] = useSegments()
 
     const dispatch = useAppDispatch()
 
@@ -43,10 +45,10 @@ function RootNavigator() {
                     <Stack.Screen name="(auth)" />
                 </Stack.Protected>
 
-                <Stack.Protected guard={!!currentUser}>
-                    <Stack.Screen name="(protected)" />
-                </Stack.Protected>
+                <Stack.Screen name="(protected)" />
             </Stack>
+
+            {rootSegment !== '(auth)' && <BottomNavigation />}
         </SafeAreaView>
     )
 }
