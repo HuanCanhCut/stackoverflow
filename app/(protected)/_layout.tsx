@@ -1,3 +1,4 @@
+import Header from '@/components/header'
 import { selectCurrentUser } from '@/redux/selector'
 import { useAppSelector } from '@/redux/redux.type'
 import { Redirect, Stack } from 'expo-router'
@@ -9,5 +10,12 @@ export default function ProtectedLayout() {
         return <Redirect href="/(auth)/login" />
     }
 
-    return <Stack screenOptions={{ headerShown: false }} />
+    return (
+        <Stack
+            screenOptions={{
+                headerShown: true,
+                header: () => <Header />,
+            }}
+        />
+    )
 }

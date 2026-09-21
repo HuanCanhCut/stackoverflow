@@ -19,7 +19,7 @@ import { getCurrentUser } from '@/redux/reducers/authSlice'
 import BottomNavigation from '@/components/bottom-navigation'
 
 export const unstable_settings = {
-    initialRouteName: '(public)',
+    initialRouteName: '(protected)/ask',
 }
 
 function RootNavigator() {
