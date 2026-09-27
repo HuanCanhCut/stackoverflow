@@ -14,8 +14,7 @@ import {
 } from 'lucide-react-native'
 import React, { useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
-import Markdown from 'react-native-markdown-display'
-import CodeBlock from './code-block'
+import MarkdownRenderer from './markdown-renderer'
 
 const CODE_LANGUAGES = [
     { label: 'Plain text', value: '' },
@@ -219,9 +218,7 @@ const MarkdownEditor = ({ markdown, onChange, className = '', ref }: MarkdownEdi
             ) : (
                 <View className="flex-1 p-4 min-h-[350px]">
                     {value.trim() ? (
-                        <Markdown style={markdownStyles} rules={markdownRules}>
-                            {value}
-                        </Markdown>
+                        <MarkdownRenderer>{value}</MarkdownRenderer>
                     ) : (
                         <Text className="text-slate-400 text-sm">Không có nội dung để xem trước.</Text>
                     )}
@@ -260,28 +257,6 @@ const TabButton = ({ label, active, onPress }: { label: string; active: boolean;
         <Text className={`text-sm font-medium ${active ? 'text-black' : 'text-slate-500'}`}>{label}</Text>
     </Pressable>
 )
-
-const markdownStyles = {
-    body: { color: '#1e293b', fontSize: 14 },
-    code_inline: { backgroundColor: '#f1f5f9', color: '#334155' },
-    blockquote: { backgroundColor: '#f8fafc', borderLeftColor: '#cbd5e1' },
-    hr: { backgroundColor: '#e2e8f0' },
-}
-
-const renderCodeNode = (node: { content: string; sourceInfo?: string; key: string }) => {
-    let { content } = node
-
-    if (content.endsWith('\n')) {
-        content = content.slice(0, -1)
-    }
-
-    return <CodeBlock key={node.key} language={node.sourceInfo?.trim()} value={content} />
-}
-
-const markdownRules = {
-    fence: (node: { content: string; sourceInfo?: string; key: string }) => renderCodeNode(node),
-    code_block: (node: { content: string; sourceInfo?: string; key: string }) => renderCodeNode(node),
-}
 
 const ToolbarButton = ({ onPress, icon }: { onPress: () => void; icon: React.ReactNode }) => (
     <Pressable onPress={onPress} hitSlop={6} className="p-2 rounded-md active:bg-slate-200">

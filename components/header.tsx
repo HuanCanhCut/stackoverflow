@@ -11,9 +11,11 @@ const BackButton = ({ onPress }: { onPress: () => void }) => (
 
 type HeaderProps = {
     variant?: 'default' | 'search'
+    searchValue?: string
+    onSearchChange?: (value: string) => void
 }
 
-const Header = ({ variant = 'default' }: HeaderProps) => {
+const Header = ({ variant = 'default', searchValue, onSearchChange }: HeaderProps) => {
     const router = useRouter()
     const canGoBack = router.canGoBack()
 
@@ -22,7 +24,16 @@ const Header = ({ variant = 'default' }: HeaderProps) => {
             <View className="h-14 flex-row items-center gap-2 border-b border-[#e2e8f0] bg-white px-2">
                 {canGoBack && <BackButton onPress={() => router.back()} />}
 
-                <Input placeholder="Tìm kiếm câu hỏi..." autoFocus className="flex-1" />
+                <Input
+                    value={searchValue}
+                    onChangeText={onSearchChange}
+                    placeholder="Tìm kiếm câu hỏi..."
+                    autoFocus
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="search"
+                    className="flex-1"
+                />
             </View>
         )
     }

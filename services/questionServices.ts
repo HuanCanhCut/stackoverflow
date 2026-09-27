@@ -1,5 +1,21 @@
 import axiosClient from '@/lib/axiosClient'
-import { CreateQuestionResponse } from '@/types/api_response/question.type'
+import { CreateQuestionResponse, GetQuestionsResponse } from '@/types/api_response/question.type'
+
+export const getQuestions = async ({
+    search,
+    page = 1,
+    perPage = 10,
+}: {
+    search?: string
+    page?: number
+    perPage?: number
+}): Promise<GetQuestionsResponse> => {
+    const res = await axiosClient.get('/questions', {
+        params: { search, page, per_page: perPage },
+    })
+
+    return res.data
+}
 
 export const createQuestion = async ({
     title,
