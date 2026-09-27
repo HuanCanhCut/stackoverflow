@@ -13,9 +13,10 @@ type HeaderProps = {
     variant?: 'default' | 'search'
     searchValue?: string
     onSearchChange?: (value: string) => void
+    onSearchSubmit?: () => void
 }
 
-const Header = ({ variant = 'default', searchValue, onSearchChange }: HeaderProps) => {
+const Header = ({ variant = 'default', searchValue, onSearchChange, onSearchSubmit }: HeaderProps) => {
     const router = useRouter()
     const canGoBack = router.canGoBack()
 
@@ -32,6 +33,7 @@ const Header = ({ variant = 'default', searchValue, onSearchChange }: HeaderProp
                     autoCapitalize="none"
                     autoCorrect={false}
                     returnKeyType="search"
+                    onSubmitEditing={onSearchSubmit}
                     className="flex-1"
                 />
             </View>

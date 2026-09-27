@@ -3,16 +3,18 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist'
 
 import authSlice from './reducers/authSlice'
+import searchHistorySlice from './reducers/searchHistorySlice'
 
 const persistConfig = {
     key: 'root',
     version: 1,
     storage: AsyncStorage,
-    whitelist: ['auth'],
+    whitelist: ['auth', 'searchHistory'],
 }
 
 const rootReducer = combineReducers({
     auth: authSlice.reducer,
+    searchHistory: searchHistorySlice.reducer,
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)

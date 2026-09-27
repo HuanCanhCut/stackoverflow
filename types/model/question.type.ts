@@ -1,4 +1,5 @@
 import { TagModel } from '@/types/model/tag.type'
+import { UserModel } from '@/types/model/user.type'
 
 export interface QuestionTagModel {
     question_id: number
@@ -25,4 +26,6 @@ export interface QuestionModel {
     updated_at: string
     tags: QuestionTagModel[]
     attachments: QuestionAttachmentModel[]
+    author?: UserModel
+    reply_count?: number
 }
