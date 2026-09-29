@@ -6,7 +6,7 @@ export interface ApiResponse<T, M = never> {
 }
 
 export interface BaseModel {
-    id: string
+    id: number
     created_at: Date
     updated_at: Date
 }
