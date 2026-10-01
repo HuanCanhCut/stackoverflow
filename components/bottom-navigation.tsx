@@ -2,6 +2,8 @@ import { type Href, usePathname, useRouter } from 'expo-router'
 import { Bell, CirclePlus, Home, Search, User } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 
+export const BOTTOM_NAVIGATION_HEIGHT = 56
+
 const navigationItems: {
     href: Href
     pathname: string
@@ -20,7 +22,11 @@ const BottomNavigation = () => {
     const router = useRouter()
 
     return (
-        <View className="h-14 flex-row border-t border-[#e2e8f0] bg-white" accessibilityRole="tablist">
+        <View
+            className="flex-row border-t border-[#e2e8f0] bg-white"
+            style={{ height: BOTTOM_NAVIGATION_HEIGHT }}
+            accessibilityRole="tablist"
+        >
             {navigationItems.map((item) => {
                 const isActive = pathname === item.pathname
                 const color = isActive ? '#f97316' : '#64748b'

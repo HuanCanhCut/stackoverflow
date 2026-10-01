@@ -1,6 +1,6 @@
 import handleApiError from '@/utils/handleApiError'
 import { useEffect, useState } from 'react'
-import { FlatList, Image, Pressable, ScrollView, Text, View } from 'react-native'
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import * as tagServices from '@/services/tagServices'
 import { TagModel } from '@/types/model/tag.type'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,7 @@ import * as questionServices from '@/services/questionServices'
 import { GetQuestionsResponse } from '@/types/api_response/question.type'
 import { Card, CardContent } from '@/components/ui/card'
 import MarkdownRenderer from '@/components/markdown-renderer'
+import Avatar from '@/components/avatar'
 import { ArrowDown, ArrowUp, Bookmark, MessageSquare } from 'lucide-react-native'
 
 const HomePage = () => {
@@ -114,12 +115,7 @@ const HomePage = () => {
                                     </View>
                                     <View className="flex-1">
                                         <View className="flex-row items-center gap-2">
-                                            <Image
-                                                source={{ uri: item.author?.avatar_path || '' }}
-                                                width={28}
-                                                height={28}
-                                                className="border border-border rounded-full"
-                                            ></Image>
+                                            <Avatar uri={item.author?.avatar_path} />
                                             <Text className="font-medium">{item.author?.full_name}</Text>
                                         </View>
                                         <Text className="mt-2 font-bold text-3xl line-clamp-3">{item.title}</Text>

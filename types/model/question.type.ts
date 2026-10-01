@@ -28,4 +28,15 @@ export interface QuestionModel {
     attachments: QuestionAttachmentModel[]
     author?: UserModel
     reply_count?: number
+    /** 1 = đã upvote, -1 = đã downvote, 0 = chưa vote (luôn 0 với khách) */
+    my_vote?: VoteValue
+    is_saved?: boolean
+}
+
+export type VoteValue = 1 | -1 | 0
+
+export interface QuestionVoteModel {
+    id: number
+    vote_count: number
+    my_vote: VoteValue
 }

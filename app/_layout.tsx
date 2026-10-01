@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-naviga
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import 'react-native-reanimated'
@@ -58,16 +59,18 @@ export default function RootLayout() {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <Provider store={store}>
-                <PersistGate loading={null} persistor={persistor}>
-                    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                        <RootNavigator />
-                        <Toaster richColors={true} theme="light" duration={2000} position="top-center" />
-                        <StatusBar style="auto" />
-                        <PortalHost />
-                    </ThemeProvider>
-                </PersistGate>
-            </Provider>
+            <KeyboardProvider>
+                <Provider store={store}>
+                    <PersistGate loading={null} persistor={persistor}>
+                        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                            <RootNavigator />
+                            <Toaster richColors={true} theme="light" duration={2000} position="top-center" />
+                            <StatusBar style="auto" />
+                            <PortalHost />
+                        </ThemeProvider>
+                    </PersistGate>
+                </Provider>
+            </KeyboardProvider>
         </GestureHandlerRootView>
     )
 }
