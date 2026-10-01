@@ -4,6 +4,7 @@ import {
     GetQuestionRepliesResponse,
     GetQuestionResponse,
     GetQuestionsResponse,
+    UpdateQuestionResponse,
     VoteQuestionResponse,
 } from '@/types/api_response/question.type'
 
@@ -89,4 +90,24 @@ export const saveQuestion = async (id: number) => {
 
 export const unsaveQuestion = async (id: number) => {
     await axiosClient.delete(`/questions/${id}/save`)
+}
+
+export const updateQuestion = async ({
+    id,
+    title,
+    body,
+    tags,
+}: {
+    id: number
+    title: string
+    body: string
+    tags: string[]
+}): Promise<UpdateQuestionResponse> => {
+    const res = await axiosClient.patch(`/questions/${id}`, {
+        title,
+        body,
+        tags: tags.map((name) => ({ id: null, name })),
+    })
+
+    return res.data
 }

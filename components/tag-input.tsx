@@ -63,10 +63,15 @@ const TagInput = ({ tags, onChange }: TagInputProps) => {
             {tags.length > 0 && (
                 <View className="flex-row flex-wrap gap-2">
                     {tags.map((tag) => (
-                        <View key={tag} className="flex-row items-center gap-1 rounded-full bg-black px-3 py-1.5">
-                            <Text className="text-sm text-black">{tag}</Text>
-                            <Pressable onPress={() => removeTag(tag)} hitSlop={8}>
-                                <X size={14} color="#c2410c" />
+                        <View key={tag} className="flex-row items-center gap-1 rounded-full bg-white px-3 py-1.5">
+                            <Text className="text-sm text-slate-700">{tag}</Text>
+                            <Pressable
+                                onPress={() => removeTag(tag)}
+                                hitSlop={8}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Xoá chủ đề ${tag}`}
+                            >
+                                <X size={14} color="#64748b" />
                             </Pressable>
                         </View>
                     ))}

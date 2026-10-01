@@ -1,13 +1,11 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { FlatList, Pressable, Text, View } from 'react-native'
-import { ArrowDown, ArrowUp, Bookmark, MessageSquare } from 'lucide-react-native'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import * as questionServices from '@/services/questionServices'
 import { QuestionModel, VoteValue } from '@/types/model/question.type'
-import { Card, CardContent } from '@/components/ui/card'
+import { GetQuestionRepliesResponse } from '@/types/api_response/question.type'
 import { Spinner } from '@/components/ui/spinner'
-import MarkdownRenderer from '@/components/markdown-renderer'
-import Avatar from '@/components/avatar'
+import PostItem, { VoteType } from '@/components/post-item'
 import CommentInput from '@/components/comment-input'
 import { BOTTOM_NAVIGATION_HEIGHT } from '@/components/bottom-navigation'
 import { KeyboardStickyView } from 'react-native-keyboard-controller'
@@ -20,10 +18,10 @@ import { toast } from 'sonner-native'
 
 const PER_PAGE = 10
 
-const ACTIVE_COLOR = '#f97316'
-const INACTIVE_COLOR = '#0f172a'
-
-type VoteType = 'upvote' | 'downvote'
+// Comment lồng sâu hơn mức này thì không thụt lề thêm nữa (màn hình điện thoại hẹp),
+// thay vào đó hiển thị "Trả lời <tên>" để biết đang trả lời ai
+const MAX_INDENT_DEPTH = 3
+const INDENT_SIZE = 16
 
 // Giống backend: vote lại cùng chiều thì bỏ vote, vote ngược chiều thì đổi vote
 const getNextVote = (post: QuestionModel, type: VoteType) => {
@@ -44,104 +42,24 @@ const ORDER_OPTIONS: { value: OrderBy; label: string }[] = [
     { value: 'vote', label: 'Nhiều vote' },
 ]
 
-const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+/** Danh sách phản hồi con của một bài viết (câu hỏi hoặc comment) */
+type Thread = {
+    ids: number[]
+    page: number
+    totalPages: number
+    loading: boolean
+    expanded: boolean
 }
 
-type PostItemProps = {
-    post: QuestionModel
-    isQuestion?: boolean
-    onVote: (post: QuestionModel, type: VoteType) => void
-    onToggleSave?: () => void
-}
+const EMPTY_THREAD: Thread = { ids: [], page: 0, totalPages: 0, loading: false, expanded: false }
 
-const PostItem = ({ post, isQuestion = false, onVote, onToggleSave }: PostItemProps) => {
-    const upvoted = post.my_vote === 1
-    const downvoted = post.my_vote === -1
+// Câu hỏi luôn mở danh sách câu trả lời, và đang tải trang đầu ngay khi vào trang
+const initialThreads = (questionId: number): Record<number, Thread> => ({
+    [questionId]: { ...EMPTY_THREAD, loading: true, expanded: true },
+})
 
-    return (
-        <Card className="w-full px-0!">
-            <CardContent className="px-2">
-                <View className="flex-row">
-                    <View className="pr-2 items-center">
-                        <Pressable
-                            className="p-2"
-                            onPress={() => onVote(post, 'upvote')}
-                            accessibilityRole="button"
-                            accessibilityLabel="Upvote"
-                            accessibilityState={{ selected: upvoted }}
-                        >
-                            <ArrowUp color={upvoted ? ACTIVE_COLOR : INACTIVE_COLOR} strokeWidth={upvoted ? 3 : 2} />
-                        </Pressable>
-                        <Text
-                            className={cn('font-bold', isQuestion ? 'text-3xl' : 'text-2xl')}
-                            style={post.my_vote ? { color: ACTIVE_COLOR } : undefined}
-                        >
-                            {post.vote_count}
-                        </Text>
-                        <Pressable
-                            className="p-2"
-                            onPress={() => onVote(post, 'downvote')}
-                            accessibilityRole="button"
-                            accessibilityLabel="Downvote"
-                            accessibilityState={{ selected: downvoted }}
-                        >
-                            <ArrowDown
-                                color={downvoted ? ACTIVE_COLOR : INACTIVE_COLOR}
-                                strokeWidth={downvoted ? 3 : 2}
-                            />
-                        </Pressable>
-                    </View>
-                    <View className="flex-1">
-                        <View className="flex-row items-center gap-2">
-                            <Avatar uri={post.author?.avatar_path} />
-                            <View className="flex-1">
-                                <Text className="font-medium">{post.author?.full_name}</Text>
-                                <Text className="text-xs text-muted-foreground">{formatDate(post.created_at)}</Text>
-                            </View>
-                        </View>
-                        {isQuestion && <Text className="mt-2 font-bold text-3xl">{post.title}</Text>}
-                        <MarkdownRenderer>{post.body}</MarkdownRenderer>
-                        {post.tags.length > 0 && (
-                            <View className="mt-2 flex-row flex-wrap gap-2">
-                                {post.tags.map((tag) => {
-                                    return (
-                                        <View key={tag.tag_id} className="bg-zinc-50 p-2 rounded-sm w-fit ">
-                                            <Text className="text-xs text-muted-foreground">{tag.tag.name}</Text>
-                                        </View>
-                                    )
-                                })}
-                            </View>
-                        )}
-                        {isQuestion && (
-                            <View className="flex-row gap-3 mt-3">
-                                <View className="flex-row items-center gap-1">
-                                    <MessageSquare size={16} className="mt-0.75 text-muted-foreground"></MessageSquare>
-                                    <Text className="mb-1">{post.reply_count ?? 0} câu trả lời</Text>
-                                </View>
-
-                                <Pressable
-                                    className="mt-0.5 flex-row items-center gap-1 p-1"
-                                    onPress={onToggleSave}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={post.is_saved ? 'Bỏ lưu' : 'Lưu bài viết'}
-                                    accessibilityState={{ selected: !!post.is_saved }}
-                                >
-                                    <Bookmark
-                                        size={16}
-                                        color={post.is_saved ? ACTIVE_COLOR : INACTIVE_COLOR}
-                                        fill={post.is_saved ? ACTIVE_COLOR : 'transparent'}
-                                    />
-                                    <Text className="mb-1">{post.is_saved ? 'Đã lưu' : 'Lưu'}</Text>
-                                </Pressable>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            </CardContent>
-        </Card>
-    )
-}
+type Row =
+    { type: 'post'; id: number; depth: number } | { type: 'more'; parentId: number; depth: number; loading: boolean }
 
 const QuestionDetailPage = () => {
     const { id } = useLocalSearchParams<{ id: string }>()
@@ -149,60 +67,122 @@ const QuestionDetailPage = () => {
     const router = useRouter()
     const currentUser = useAppSelector(selectCurrentUser)
 
-    const [question, setQuestion] = useState<QuestionModel>()
-    const [replies, setReplies] = useState<QuestionModel[]>([])
+    // Lưu phẳng theo id để vote / cập nhật một comment ở bất kỳ cấp nào chỉ cần sửa 1 chỗ
+    const [posts, setPosts] = useState<Record<number, QuestionModel>>({})
+    const [threads, setThreads] = useState<Record<number, Thread>>(() => initialThreads(questionId))
     const [orderBy, setOrderBy] = useState<OrderBy>('newest')
-    const [page, setPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
     const [loadingQuestion, setLoadingQuestion] = useState(true)
-    const [loadingReplies, setLoadingReplies] = useState(false)
+    const [replyTo, setReplyTo] = useState<QuestionModel | null>(null)
 
+    const question = posts[questionId] as QuestionModel | undefined
+    const rootThread = threads[questionId] ?? EMPTY_THREAD
+
+    // Tăng mỗi khi đổi cách sắp xếp để bỏ qua response của các lần tải phản hồi con / trang sau đang chạy
+    const loadVersion = useRef(0)
     // Chặn bấm liên tục khi request vote / lưu của cùng bài viết chưa xong
     const pendingVoteIds = useRef(new Set<number>())
     const pendingSave = useRef(false)
+    const commentInputRef = useRef<TextInput>(null)
 
     // Bàn phím che cả bottom navigation + safe area đáy, nên khi mở chỉ cần đẩy thanh comment lên phần còn lại
     const insets = useSafeAreaInsets()
     const commentStickyOffset = { closed: 0, opened: BOTTOM_NAVIGATION_HEIGHT + insets.bottom }
 
-    useEffect(() => {
-        const getQuestion = async () => {
-            try {
-                setLoadingQuestion(true)
-                const { data } = await questionServices.getQuestion(questionId)
+    const updatePost = useCallback((postId: number, changes: Partial<QuestionModel>) => {
+        setPosts((prev) => (prev[postId] ? { ...prev, [postId]: { ...prev[postId], ...changes } } : prev))
+    }, [])
 
-                setQuestion(data)
-            } catch (error) {
-                handleApiError(error)
-            } finally {
-                setLoadingQuestion(false)
+    const updateThread = useCallback((parentId: number, changes: Partial<Thread>) => {
+        setThreads((prev) => ({ ...prev, [parentId]: { ...(prev[parentId] ?? EMPTY_THREAD), ...changes } }))
+    }, [])
+
+    // Gộp 1 trang phản hồi vừa tải vào cây comment
+    const applyReplies = useCallback((parentId: number, page: number, res: GetQuestionRepliesResponse) => {
+        setPosts((prev) => {
+            const next = { ...prev }
+            res.data.forEach((reply) => {
+                next[reply.id] = reply
+            })
+            return next
+        })
+        setThreads((prev) => {
+            const thread = prev[parentId] ?? EMPTY_THREAD
+            const knownIds = new Set(thread.ids)
+            // Bỏ trùng: comment vừa gửi đã được chèn sẵn ở đầu danh sách
+            const newIds = res.data.map((reply) => reply.id).filter((replyId) => !knownIds.has(replyId))
+
+            return {
+                ...prev,
+                [parentId]: {
+                    ...thread,
+                    ids: [...thread.ids, ...newIds],
+                    page,
+                    totalPages: res.meta.pagination.total_pages,
+                    loading: false,
+                },
             }
+        })
+    }, [])
+
+    const loadReplies = async (parentId: number, page: number) => {
+        const version = loadVersion.current
+
+        updateThread(parentId, { loading: true, expanded: true })
+
+        try {
+            const res = await questionServices.getQuestionReplies({ id: parentId, orderBy, page, perPage: PER_PAGE })
+
+            if (version === loadVersion.current) applyReplies(parentId, page, res)
+        } catch (error) {
+            handleApiError(error)
+
+            if (version === loadVersion.current) updateThread(parentId, { loading: false })
         }
+    }
 
-        getQuestion()
-    }, [questionId])
+    // Tải lại mỗi khi màn hình được focus để cập nhật sau khi chỉnh sửa câu hỏi rồi quay về
+    useFocusEffect(
+        useCallback(() => {
+            let ignore = false
 
+            const getQuestion = async () => {
+                try {
+                    const { data } = await questionServices.getQuestion(questionId)
+
+                    if (!ignore) setPosts((prev) => ({ ...prev, [data.id]: data }))
+                } catch (error) {
+                    handleApiError(error)
+                } finally {
+                    if (!ignore) setLoadingQuestion(false)
+                }
+            }
+
+            getQuestion()
+
+            return () => {
+                ignore = true
+            }
+        }, [questionId]),
+    )
+
+    // Tải trang đầu khi vào trang / đổi cách sắp xếp
     useEffect(() => {
         let ignore = false
 
         const getReplies = async () => {
             try {
-                setLoadingReplies(true)
                 const res = await questionServices.getQuestionReplies({
                     id: questionId,
                     orderBy,
-                    page,
+                    page: 1,
                     perPage: PER_PAGE,
                 })
 
-                if (ignore) return
-
-                setReplies((prev) => (page === 1 ? res.data : [...prev, ...res.data]))
-                setTotalPages(res.meta.pagination.total_pages)
+                if (!ignore) applyReplies(questionId, 1, res)
             } catch (error) {
                 handleApiError(error)
-            } finally {
-                if (!ignore) setLoadingReplies(false)
+
+                if (!ignore) updateThread(questionId, { loading: false })
             }
         }
 
@@ -211,26 +191,68 @@ const QuestionDetailPage = () => {
         return () => {
             ignore = true
         }
-    }, [questionId, orderBy, page])
+    }, [questionId, orderBy, applyReplies, updateThread])
+
+    const rows = useMemo(() => {
+        const result: Row[] = []
+
+        const appendThread = (parentId: number, depth: number) => {
+            const thread = threads[parentId]
+            if (!thread) return
+
+            thread.ids.forEach((replyId) => {
+                result.push({ type: 'post', id: replyId, depth })
+
+                const childThread = threads[replyId]
+                if (!childThread?.expanded) return
+
+                appendThread(replyId, depth + 1)
+
+                if (childThread.loading || childThread.page < childThread.totalPages) {
+                    result.push({ type: 'more', parentId: replyId, depth: depth + 1, loading: childThread.loading })
+                }
+            })
+        }
+
+        appendThread(questionId, 0)
+
+        return result
+    }, [threads, questionId])
 
     const handleChangeOrder = (value: OrderBy) => {
         if (value === orderBy) return
 
-        setReplies([])
-        setPage(1)
+        // Thứ tự thay đổi nên bỏ toàn bộ cây comment đã tải (kể cả request đang chạy), effect sẽ tải lại từ đầu
+        loadVersion.current += 1
+        setThreads(initialThreads(questionId))
         setOrderBy(value)
     }
 
     const handleLoadMore = () => {
-        if (loadingReplies || page >= totalPages) return
+        if (rootThread.loading || rootThread.page >= rootThread.totalPages) return
 
-        setPage((prev) => prev + 1)
+        loadReplies(questionId, rootThread.page + 1)
     }
 
-    const updatePost = useCallback((postId: number, changes: Partial<QuestionModel>) => {
-        setQuestion((prev) => (prev?.id === postId ? { ...prev, ...changes } : prev))
-        setReplies((prev) => prev.map((reply) => (reply.id === postId ? { ...reply, ...changes } : reply)))
-    }, [])
+    const handleLoadMoreChildren = (parentId: number) => {
+        const thread = threads[parentId] ?? EMPTY_THREAD
+
+        if (thread.loading) return
+
+        loadReplies(parentId, thread.page + 1)
+    }
+
+    const handleToggleReplies = (post: QuestionModel) => {
+        const thread = threads[post.id]
+
+        if (thread?.expanded) {
+            updateThread(post.id, { expanded: false })
+        } else if (thread && thread.page > 0) {
+            updateThread(post.id, { expanded: true })
+        } else {
+            loadReplies(post.id, 1)
+        }
+    }
 
     const requireLogin = () => {
         if (currentUser) return true
@@ -291,8 +313,21 @@ const QuestionDetailPage = () => {
         }
     }
 
+    const handleEdit = () => {
+        router.push({ pathname: '/(protected)/edit-question/[id]', params: { id: questionId } })
+    }
+
+    const handleReply = (post: QuestionModel) => {
+        if (!requireLogin()) return
+
+        setReplyTo(post)
+        commentInputRef.current?.focus()
+    }
+
     const handleSubmitReply = async (body: string) => {
         if (!question || !requireLogin()) return false
+
+        const parent = replyTo ?? question
 
         try {
             const { data } = await questionServices.createQuestion({
@@ -301,14 +336,34 @@ const QuestionDetailPage = () => {
                 body,
                 tags: [],
                 uploadIds: [],
-                parentId: question.id,
+                parentId: parent.id,
             })
 
-            setReplies((prev) => [
-                { ...data, author: currentUser ?? undefined, vote_count: 0, my_vote: 0, is_saved: false },
+            const parentThread = threads[parent.id] ?? EMPTY_THREAD
+            // Comment cha có phản hồi nhưng chưa tải lần nào: tải thêm để hiện cùng comment vừa gửi
+            const shouldLoadSiblings =
+                parent.id !== questionId && parentThread.page === 0 && (parent.reply_count ?? 0) > 0
+
+            setPosts((prev) => ({
                 ...prev,
-            ])
-            updatePost(question.id, { reply_count: (question.reply_count ?? 0) + 1 })
+                [data.id]: {
+                    ...data,
+                    author: currentUser ?? undefined,
+                    vote_count: 0,
+                    my_vote: 0,
+                    is_saved: false,
+                    reply_count: 0,
+                },
+                [parent.id]: { ...prev[parent.id], reply_count: (prev[parent.id]?.reply_count ?? 0) + 1 },
+            }))
+            setThreads((prev) => {
+                const thread = prev[parent.id] ?? EMPTY_THREAD
+
+                return { ...prev, [parent.id]: { ...thread, ids: [data.id, ...thread.ids], expanded: true } }
+            })
+            setReplyTo(null)
+
+            if (shouldLoadSiblings) loadReplies(parent.id, 1)
 
             return true
         } catch (error) {
@@ -316,6 +371,45 @@ const QuestionDetailPage = () => {
 
             return false
         }
+    }
+
+    const renderRow = ({ item }: { item: Row }) => {
+        const indent = Math.min(item.depth, MAX_INDENT_DEPTH) * INDENT_SIZE
+        const threadLineClassName = item.depth > 0 ? 'border-l-2 border-[#e2e8f0] pl-2' : undefined
+
+        if (item.type === 'more') {
+            return (
+                <View style={{ marginLeft: indent }} className={threadLineClassName}>
+                    {item.loading ? (
+                        <View className="items-start py-2">
+                            <Spinner />
+                        </View>
+                    ) : (
+                        <Pressable className="py-2" onPress={() => handleLoadMoreChildren(item.parentId)}>
+                            <Text className="text-sm font-medium text-muted-foreground">Xem thêm phản hồi</Text>
+                        </Pressable>
+                    )}
+                </View>
+            )
+        }
+
+        const post = posts[item.id]
+        if (!post) return null
+
+        const parentAuthor = post.parent_id ? posts[post.parent_id]?.author?.full_name : undefined
+
+        return (
+            <View style={{ marginLeft: indent }} className={threadLineClassName}>
+                <PostItem
+                    post={post}
+                    onVote={handleVote}
+                    onReply={handleReply}
+                    onToggleReplies={handleToggleReplies}
+                    repliesExpanded={!!threads[post.id]?.expanded}
+                    replyToName={item.depth > MAX_INDENT_DEPTH ? parentAuthor : undefined}
+                />
+            </View>
+        )
     }
 
     if (loadingQuestion) {
@@ -339,15 +433,21 @@ const QuestionDetailPage = () => {
             <FlatList
                 className="flex-1 px-2 pt-2"
                 keyboardShouldPersistTaps="handled"
-                data={replies}
-                keyExtractor={(item) => item.id.toString()}
+                data={rows}
+                keyExtractor={(item) => (item.type === 'post' ? `post-${item.id}` : `more-${item.parentId}`)}
                 contentContainerClassName="gap-3 w-full pb-4"
                 showsVerticalScrollIndicator={false}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
                 ListHeaderComponent={
                     <View className="gap-4">
-                        <PostItem post={question} isQuestion onVote={handleVote} onToggleSave={handleToggleSave} />
+                        <PostItem
+                            post={question}
+                            isQuestion
+                            onVote={handleVote}
+                            onToggleSave={handleToggleSave}
+                            onEdit={currentUser?.id === question.author_id ? handleEdit : undefined}
+                        />
 
                         <View className="flex-row items-center justify-between">
                             <Text className="text-lg font-bold">{question.reply_count ?? 0} câu trả lời</Text>
@@ -373,14 +473,14 @@ const QuestionDetailPage = () => {
                         </View>
                     </View>
                 }
-                renderItem={({ item }) => <PostItem post={item} onVote={handleVote} />}
+                renderItem={renderRow}
                 ListEmptyComponent={
-                    loadingReplies ? null : (
+                    rootThread.loading ? null : (
                         <Text className="text-center text-muted-foreground py-6">Chưa có câu trả lời nào</Text>
                     )
                 }
                 ListFooterComponent={
-                    loadingReplies ? (
+                    rootThread.loading ? (
                         <View className="py-4 items-center">
                             <Spinner />
                         </View>
@@ -389,7 +489,14 @@ const QuestionDetailPage = () => {
             ></FlatList>
 
             <KeyboardStickyView offset={commentStickyOffset}>
-                <CommentInput canComment={!!currentUser} onRequireLogin={requireLogin} onSubmit={handleSubmitReply} />
+                <CommentInput
+                    canComment={!!currentUser}
+                    onRequireLogin={requireLogin}
+                    onSubmit={handleSubmitReply}
+                    replyingTo={replyTo?.author?.full_name ?? null}
+                    onCancelReply={() => setReplyTo(null)}
+                    inputRef={commentInputRef}
+                />
             </KeyboardStickyView>
         </View>
     )

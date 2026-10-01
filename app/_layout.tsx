@@ -59,7 +59,9 @@ export default function RootLayout() {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
+            {/* App đã bật edge-to-edge (SafeAreaView bên dưới tự lo inset). Khai báo rõ để KeyboardProvider
+                không tự chèn thêm padding cho status bar / navigation bar, gây header dày gấp đôi */}
+            <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
                 <Provider store={store}>
                     <PersistGate loading={null} persistor={persistor}>
                         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

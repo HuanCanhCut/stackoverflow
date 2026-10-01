@@ -10,3 +10,5 @@ export type GetQuestionResponse = ApiResponse<QuestionModel>
 export type GetQuestionRepliesResponse = ResponsePagination<QuestionModel[]>
 
 export type VoteQuestionResponse = ApiResponse<QuestionVoteModel>
+
+export type UpdateQuestionResponse = ApiResponse<QuestionModel>

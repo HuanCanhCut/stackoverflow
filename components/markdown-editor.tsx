@@ -168,6 +168,8 @@ const MarkdownEditor = ({ markdown, onChange, className = '', ref }: MarkdownEdi
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
+                    // ScrollView mặc định flexGrow: 1, khi editor được cho flex-1 (vd. modal comment) toolbar sẽ bị giãn cao
+                    className="grow-0"
                     contentContainerClassName="flex-row items-center gap-1 p-1.5 border-b border-slate-100 bg-slate-50"
                 >
                     <ToolbarButton onPress={undo} icon={<Undo2 size={18} color="#334155" />} />

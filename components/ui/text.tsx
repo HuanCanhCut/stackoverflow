@@ -64,10 +64,15 @@ const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {
 
 const TextClassContext = React.createContext<string | undefined>(undefined);
 
+// Máy OPPO / OnePlus / Realme (font OPlus Sans): chữ in đậm vẽ rộng hơn kích thước đo được nên từ cuối
+// bị xuống dòng và bị cắt (vd. nút "Đăng nhập" chỉ còn "Đăng"). Chỉ định rõ Roboto để đo và vẽ khớp nhau.
+const ANDROID_FONT_FIX = Platform.select({ android: { fontFamily: 'Roboto' } });
+
 function Text({
   className,
   asChild = false,
   variant = 'default',
+  style,
   ...props
 }: React.ComponentProps<typeof RNText> &
   React.RefAttributes<typeof RNText> &
@@ -81,6 +86,8 @@ function Text({
       className={cn(textVariants({ variant }), textClass, className)}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
+      // Bỏ qua variant code để không đè font-mono
+      style={variant === 'code' ? style : [ANDROID_FONT_FIX, style]}
       {...props}
     />
   );
