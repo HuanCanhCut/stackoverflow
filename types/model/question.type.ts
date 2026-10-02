@@ -31,7 +31,12 @@ export interface QuestionModel {
     /** 1 = đã upvote, -1 = đã downvote, 0 = chưa vote (luôn 0 với khách) */
     my_vote?: VoteValue
     is_saved?: boolean
+    /** Kiểm duyệt bằng LLM: rejected chỉ tác giả mới thấy, kèm lý do */
+    moderation_status?: ModerationStatus
+    moderation_reason?: string | null
 }
+
+export type ModerationStatus = 'pending' | 'approved' | 'rejected'
 
 export type VoteValue = 1 | -1 | 0
 

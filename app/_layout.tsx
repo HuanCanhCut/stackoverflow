@@ -18,6 +18,7 @@ import { Toaster } from 'sonner-native'
 import { useEffect } from 'react'
 import { getCurrentUser } from '@/redux/reducers/authSlice'
 import BottomNavigation from '@/components/bottom-navigation'
+import SocketListener from '@/components/socket-listener'
 
 export const unstable_settings = {
     initialRouteName: '(protected)/ask',
@@ -50,6 +51,8 @@ function RootNavigator() {
             </Stack>
 
             {rootSegment !== '(auth)' && <BottomNavigation />}
+
+            <SocketListener />
         </SafeAreaView>
     )
 }

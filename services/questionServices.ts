@@ -111,3 +111,7 @@ export const updateQuestion = async ({
 
     return res.data
 }
+
+export const deleteQuestion = async (id: number) => {
+    await axiosClient.delete(`/questions/${id}`)
+}

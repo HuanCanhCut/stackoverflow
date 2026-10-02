@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native'
+import { Alert, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import * as questionServices from '@/services/questionServices'
 import { QuestionModel, VoteValue } from '@/types/model/question.type'
 import { GetQuestionRepliesResponse } from '@/types/api_response/question.type'
@@ -82,6 +82,7 @@ const QuestionDetailPage = () => {
     // Chặn bấm liên tục khi request vote / lưu của cùng bài viết chưa xong
     const pendingVoteIds = useRef(new Set<number>())
     const pendingSave = useRef(false)
+    const pendingDeleteIds = useRef(new Set<number>())
     const commentInputRef = useRef<TextInput>(null)
 
     // Bàn phím che cả bottom navigation + safe area đáy, nên khi mở chỉ cần đẩy thanh comment lên phần còn lại
@@ -317,6 +318,70 @@ const QuestionDetailPage = () => {
         router.push({ pathname: '/(protected)/edit-question/[id]', params: { id: questionId } })
     }
 
+    const deletePost = async (post: QuestionModel) => {
+        if (pendingDeleteIds.current.has(post.id)) return
+
+        pendingDeleteIds.current.add(post.id)
+
+        try {
+            await questionServices.deleteQuestion(post.id)
+
+            if (post.id === questionId) {
+                toast.success('Đã xóa câu hỏi')
+
+                if (router.canGoBack()) {
+                    router.back()
+                } else {
+                    router.replace('/(public)')
+                }
+
+                return
+            }
+
+            // Backend xóa cascade các phản hồi con, nên chỉ cần gỡ comment khỏi danh sách của comment cha
+            const parentId = post.parent_id ?? questionId
+
+            setPosts((prev) => {
+                const { [post.id]: _deleted, ...rest } = prev
+                const parent = rest[parentId]
+
+                if (!parent) return rest
+
+                return { ...rest, [parentId]: { ...parent, reply_count: Math.max((parent.reply_count ?? 1) - 1, 0) } }
+            })
+            setThreads((prev) => {
+                const { [post.id]: _deleted, ...rest } = prev
+                const parentThread = rest[parentId]
+
+                if (!parentThread) return rest
+
+                return {
+                    ...rest,
+                    [parentId]: { ...parentThread, ids: parentThread.ids.filter((replyId) => replyId !== post.id) },
+                }
+            })
+            setReplyTo((prev) => (prev?.id === post.id ? null : prev))
+            toast.success('Đã xóa câu trả lời')
+        } catch (error) {
+            handleApiError(error)
+        } finally {
+            pendingDeleteIds.current.delete(post.id)
+        }
+    }
+
+    const handleDelete = (post: QuestionModel) => {
+        const isQuestion = post.id === questionId
+
+        Alert.alert(
+            isQuestion ? 'Xóa câu hỏi' : 'Xóa câu trả lời',
+            'Toàn bộ phản hồi bên trong cũng sẽ bị xóa. Bạn không thể hoàn tác thao tác này.',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                { text: 'Xóa', style: 'destructive', onPress: () => deletePost(post) },
+            ],
+        )
+    }
+
     const handleReply = (post: QuestionModel) => {
         if (!requireLogin()) return
 
@@ -405,6 +470,7 @@ const QuestionDetailPage = () => {
                     onVote={handleVote}
                     onReply={handleReply}
                     onToggleReplies={handleToggleReplies}
+                    onDelete={currentUser?.id === post.author_id ? handleDelete : undefined}
                     repliesExpanded={!!threads[post.id]?.expanded}
                     replyToName={item.depth > MAX_INDENT_DEPTH ? parentAuthor : undefined}
                 />
@@ -447,6 +513,7 @@ const QuestionDetailPage = () => {
                             onVote={handleVote}
                             onToggleSave={handleToggleSave}
                             onEdit={currentUser?.id === question.author_id ? handleEdit : undefined}
+                            onDelete={currentUser?.id === question.author_id ? handleDelete : undefined}
                         />
 
                         <View className="flex-row items-center justify-between">

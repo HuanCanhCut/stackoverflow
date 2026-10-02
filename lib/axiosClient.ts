@@ -74,7 +74,8 @@ const refreshToken = async () => {
     }
 }
 
-const getNewToken = async () => {
+// Export để socket dùng chung luồng refresh token (tránh refresh song song với axios)
+export const getNewToken = async () => {
     if (isRefreshing) {
         return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject })

@@ -1,4 +1,14 @@
-import { ArrowDown, ArrowUp, Bookmark, CornerDownRight, MessageSquare, Pencil, Reply } from 'lucide-react-native'
+import {
+    ArrowDown,
+    ArrowUp,
+    Bookmark,
+    CornerDownRight,
+    EyeOff,
+    MessageSquare,
+    Pencil,
+    Reply,
+    Trash2,
+} from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 import { QuestionModel } from '@/types/model/question.type'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,6 +19,7 @@ import { cn } from '@/lib/utils'
 export const ACTIVE_COLOR = '#f97316'
 const INACTIVE_COLOR = '#0f172a'
 const MUTED_COLOR = '#64748b'
+const DANGER_COLOR = '#dc2626'
 
 export type VoteType = 'upvote' | 'downvote'
 
@@ -24,6 +35,8 @@ type PostItemProps = {
     onToggleSave?: () => void
     /** Chỉ truyền khi người xem là tác giả */
     onEdit?: () => void
+    /** Chỉ truyền khi người xem là tác giả */
+    onDelete?: (post: QuestionModel) => void
     // Chỉ dùng cho comment
     onReply?: (post: QuestionModel) => void
     onToggleReplies?: (post: QuestionModel) => void
@@ -38,6 +51,7 @@ const PostItem = ({
     onVote,
     onToggleSave,
     onEdit,
+    onDelete,
     onReply,
     onToggleReplies,
     repliesExpanded = false,
@@ -98,7 +112,32 @@ const PostItem = ({
                                     <Text className="font-medium">{post.author?.full_name}</Text>
                                     <Text className="text-xs text-muted-foreground">{formatDate(post.created_at)}</Text>
                                 </View>
+                                {onDelete && (
+                                    <Pressable
+                                        className="p-2"
+                                        hitSlop={8}
+                                        onPress={() => onDelete(post)}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={isQuestion ? 'Xóa câu hỏi' : 'Xóa câu trả lời'}
+                                    >
+                                        <Trash2 size={18} color={DANGER_COLOR} />
+                                    </Pressable>
+                                )}
                             </View>
+                            {post.moderation_status === 'rejected' && (
+                                // Chỉ tác giả mới nhận được bài bị ẩn từ API
+                                <View className="mt-2 flex-row gap-2 rounded-md border border-red-200 bg-red-50 p-2">
+                                    <EyeOff size={16} color="#dc2626" />
+                                    <View className="flex-1">
+                                        <Text className="text-sm font-medium text-red-700">
+                                            Đã bị ẩn, chỉ bạn nhìn thấy nội dung này
+                                        </Text>
+                                        {post.moderation_reason && (
+                                            <Text className="text-xs text-red-600">{post.moderation_reason}</Text>
+                                        )}
+                                    </View>
+                                </View>
+                            )}
                             {replyToName && (
                                 <View className="mt-2 flex-row items-center gap-1">
                                     <CornerDownRight size={12} color={MUTED_COLOR} />
