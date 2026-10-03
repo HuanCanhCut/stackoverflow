@@ -3,6 +3,7 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist'
 
 import authSlice from './reducers/authSlice'
+import notificationSlice from './reducers/notificationSlice'
 import searchHistorySlice from './reducers/searchHistorySlice'
 
 const persistConfig = {
@@ -14,6 +15,8 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
     auth: authSlice.reducer,
+    // Không persist: số thông báo chưa nhìn cần luôn lấy mới từ server
+    notification: notificationSlice.reducer,
     searchHistory: searchHistorySlice.reducer,
 })
 

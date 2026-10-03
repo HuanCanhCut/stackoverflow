@@ -1,3 +1,5 @@
+import { useAppSelector } from '@/redux/redux.type'
+import { selectUnseenNotificationCount } from '@/redux/selector'
 import { type Href, usePathname, useRouter } from 'expo-router'
 import { Bell, CirclePlus, Home, Search, User } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
@@ -20,6 +22,7 @@ const navigationItems: {
 const BottomNavigation = () => {
     const pathname = usePathname()
     const router = useRouter()
+    const unseenNotificationCount = useAppSelector(selectUnseenNotificationCount)
 
     return (
         <View
@@ -31,6 +34,8 @@ const BottomNavigation = () => {
                 const isActive = pathname === item.pathname
                 const color = isActive ? '#f97316' : '#64748b'
                 const Icon = item.icon
+                // Badge chấm đỏ cho mục Thông báo khi còn thông báo chưa nhìn
+                const showBadge = item.pathname === '/notifications' && unseenNotificationCount > 0
 
                 return (
                     <Pressable
@@ -41,7 +46,12 @@ const BottomNavigation = () => {
                         accessibilityState={{ selected: isActive }}
                         onPress={() => router.navigate(item.href)}
                     >
-                        <Icon color={color} size={22} />
+                        <View>
+                            <Icon color={color} size={22} />
+                            {showBadge ? (
+                                <View className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full border border-white bg-red-500" />
+                            ) : null}
+                        </View>
                         <Text style={{ color, fontSize: 11, fontWeight: '500' }}>{item.title}</Text>
                     </Pressable>
                 )

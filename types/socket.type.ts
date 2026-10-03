@@ -1,5 +1,11 @@
 export enum SocketEvent {
     QUESTION_MODERATED = 'question:moderated',
+    NOTIFICATION_CREATED = 'notification:created',
+}
+
+export interface NotificationCreatedPayload {
+    id: string
+    content: string
 }
 
 export interface QuestionModeratedPayload {

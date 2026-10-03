@@ -17,6 +17,7 @@ import { selectCurrentUser } from '@/redux/selector'
 import { Toaster } from 'sonner-native'
 import { useEffect } from 'react'
 import { getCurrentUser } from '@/redux/reducers/authSlice'
+import { fetchUnseenNotificationCount } from '@/redux/reducers/notificationSlice'
 import BottomNavigation from '@/components/bottom-navigation'
 import SocketListener from '@/components/socket-listener'
 
@@ -33,6 +34,13 @@ function RootNavigator() {
     useEffect(() => {
         dispatch(getCurrentUser())
     }, [dispatch])
+
+    // Lấy số thông báo chưa nhìn để hiển thị badge trên chuông sau khi đã đăng nhập
+    useEffect(() => {
+        if (currentUser) {
+            dispatch(fetchUnseenNotificationCount())
+        }
+    }, [currentUser, dispatch])
 
     return (
         <SafeAreaView style={{ flex: 1 }}>

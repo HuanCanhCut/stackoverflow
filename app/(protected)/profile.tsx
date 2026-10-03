@@ -130,6 +130,7 @@ const ProfilePage = () => {
     useEffect(() => {
         const current = tabData[activeTab]
         if (!current.loaded && !current.loading) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             loadTab(activeTab, 1)
         }
     }, [activeTab, tabData, loadTab])
@@ -211,9 +212,7 @@ const ProfilePage = () => {
 
             <Text className="mt-4 text-2xl font-bold">{currentUser?.full_name}</Text>
 
-            {currentUser?.nickname ? (
-                <Text className="mt-1 text-muted-foreground">@{currentUser.nickname}</Text>
-            ) : null}
+            {currentUser?.nickname ? <Text className="mt-1 text-muted-foreground">@{currentUser.nickname}</Text> : null}
 
             {currentUser?.bio ? (
                 <Text className="mt-3 text-center leading-6 text-muted-foreground">{currentUser.bio}</Text>
@@ -308,11 +307,7 @@ const ProfilePage = () => {
                                         onPress={() => openQuestion(item.root_question_id ?? item.id)}
                                     />
                                 ) : (
-                                    <QuestionCard
-                                        key={item.id}
-                                        question={item}
-                                        onPress={() => openQuestion(item.id)}
-                                    />
+                                    <QuestionCard key={item.id} question={item} onPress={() => openQuestion(item.id)} />
                                 ),
                             )}
 
