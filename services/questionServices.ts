@@ -10,15 +10,17 @@ import {
 
 export const getQuestions = async ({
     search,
+    tagId,
     page = 1,
     perPage = 10,
 }: {
     search?: string
+    tagId?: number
     page?: number
     perPage?: number
 }): Promise<GetQuestionsResponse> => {
     const res = await axiosClient.get('/questions', {
-        params: { search, page, per_page: perPage },
+        params: { search, tag_id: tagId, page, per_page: perPage },
     })
 
     return res.data
