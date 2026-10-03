@@ -50,6 +50,20 @@ export const createQuestion = async ({
     return res.data
 }
 
+export const getSavedQuestions = async ({
+    page = 1,
+    perPage = 10,
+}: {
+    page?: number
+    perPage?: number
+} = {}): Promise<GetQuestionsResponse> => {
+    const res = await axiosClient.get('/questions/saved', {
+        params: { page, per_page: perPage },
+    })
+
+    return res.data
+}
+
 export const getQuestion = async (id: number): Promise<GetQuestionResponse> => {
     const res = await axiosClient.get(`/questions/${id}`)
 

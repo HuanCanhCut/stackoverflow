@@ -28,6 +28,19 @@ export const register = async ({
     return res.data
 }
 
+export const logout = async ({
+    accessToken,
+    refreshToken,
+}: {
+    accessToken?: string | null
+    refreshToken?: string | null
+}): Promise<void> => {
+    await axiosClient.post('/auth/logout', {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+    })
+}
+
 export const sendForgotPasswordCode = async ({ email }: { email: string }): Promise<void> => {
     const res = await axiosClient.post('/auth/forgot-password/code', {
         email,

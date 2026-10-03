@@ -28,6 +28,8 @@ export interface QuestionModel {
     attachments: QuestionAttachmentModel[]
     author?: UserModel
     reply_count?: number
+    /** Chỉ có ở câu trả lời của user: id câu hỏi gốc để điều hướng tới trang chi tiết */
+    root_question_id?: number
     /** 1 = đã upvote, -1 = đã downvote, 0 = chưa vote (luôn 0 với khách) */
     my_vote?: VoteValue
     is_saved?: boolean
