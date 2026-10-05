@@ -261,7 +261,8 @@ const ProfilePage = () => {
                 disabled={isLoggingOut}
                 onPress={handleLogout}
             >
-                <LogOut size={18} className="text-destructive" />
+                <LogOut size={18} className="text-destructive" color={'#ff0000'} />
+
                 <Text className="text-destructive">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</Text>
             </Button>
 

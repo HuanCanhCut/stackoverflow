@@ -47,6 +47,10 @@ const HomePage = () => {
     const pendingVoteIds = useRef(new Set<number>())
     // Chặn double-tap lưu/bỏ lưu trên cùng một câu hỏi khi request chưa xong
     const pendingSaveIds = useRef(new Set<number>())
+    // Vị trí x của từng tag trên thanh lọc, để cuộn tới tag được chọn từ card câu hỏi
+    const tagBarRef = useRef<ScrollView>(null)
+    const tagOffsets = useRef(new Map<number, number>())
+    const questionListRef = useRef<FlatList<QuestionModel>>(null)
 
     useEffect(() => {
         const getTags = async () => {
@@ -158,6 +162,13 @@ const HomePage = () => {
 
         setActiveTag(tagId)
         setPage(1)
+        questionListRef.current?.scrollToOffset({ offset: 0, animated: false })
+
+        // Cuộn thanh tag để tag vừa chọn nằm trong tầm nhìn (lùi 16px cho khỏi sát mép)
+        const offset = tagId === null ? 0 : tagOffsets.current.get(tagId)
+        if (offset !== undefined) {
+            tagBarRef.current?.scrollTo({ x: Math.max(0, offset - 16), animated: true })
+        }
     }
 
     // Cập nhật một câu hỏi trong danh sách hiện tại theo id
@@ -231,6 +242,7 @@ const HomePage = () => {
     return (
         <View className="flex-1 p-2 gap-4 justify-start">
             <ScrollView
+                ref={tagBarRef}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 className="grow-0"
@@ -260,6 +272,7 @@ const HomePage = () => {
                     <Pressable
                         key={tag.id}
                         onPress={() => selectTag(tag.id)}
+                        onLayout={(e) => tagOffsets.current.set(tag.id, e.nativeEvent.layout.x)}
                         className={cn('px-3 py-2 rounded-lg bg-white', {
                             'bg-primary': activeTag === tag.id,
                         })}
@@ -275,6 +288,7 @@ const HomePage = () => {
                 ))}
             </ScrollView>
             <FlatList
+                ref={questionListRef}
                 className="flex-1"
                 data={questions?.data}
                 keyExtractor={(item) => {
@@ -322,14 +336,21 @@ const HomePage = () => {
                                             <View className="mt-2 flex-row gap-2">
                                                 {item.tags.map((tag) => {
                                                     return (
-                                                        <View
+                                                        <Pressable
                                                             key={tag.tag_id}
-                                                            className="bg-zinc-50 p-2 rounded-sm w-fit "
+                                                            onPress={() => selectTag(tag.tag_id)}
+                                                            className={cn('bg-zinc-50 p-2 rounded-sm w-fit', {
+                                                                'bg-primary/10': activeTag === tag.tag_id,
+                                                            })}
                                                         >
-                                                            <Text className="text-xs text-muted-foreground">
+                                                            <Text
+                                                                className={cn('text-xs text-muted-foreground', {
+                                                                    'text-primary': activeTag === tag.tag_id,
+                                                                })}
+                                                            >
                                                                 {tag.tag.name}
                                                             </Text>
-                                                        </View>
+                                                        </Pressable>
                                                     )
                                                 })}
                                             </View>

@@ -18,9 +18,8 @@ const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
                 {question.title}
             </Text>
 
-            {/* Giới hạn chiều cao để body dài / nhiều code không làm card quá cao,
-                pointerEvents: none để bấm vào vùng body vẫn mở post detail */}
-            <View className="max-h-32 overflow-hidden" style={{ pointerEvents: 'none' }}>
+            {/* pointerEvents: none để bấm vào vùng body vẫn mở post detail */}
+            <View style={{ pointerEvents: 'none' }}>
                 <MarkdownRenderer>{question.body}</MarkdownRenderer>
             </View>
 

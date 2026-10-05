@@ -9,6 +9,7 @@ export default function PublicLayout() {
                 header: () => <Header />,
             }}
         >
+            <Stack.Screen name="index" />
             <Stack.Screen name="search" options={{ headerShown: false }} />
         </Stack>
     )
