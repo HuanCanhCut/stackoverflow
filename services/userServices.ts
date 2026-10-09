@@ -1,5 +1,13 @@
 import axiosClient from '@/lib/axiosClient'
 import { GetQuestionsResponse } from '@/types/api_response/question.type'
+import { GetUserResponse } from '@/types/api_response/user.type'
+
+// Hồ sơ công khai của một user kèm thống kê
+export const getUser = async (userId: number): Promise<GetUserResponse> => {
+    const res = await axiosClient.get(`/users/${userId}`)
+
+    return res.data
+}
 
 // Câu hỏi do người dùng đăng
 export const getUserQuestions = async ({

@@ -3,8 +3,6 @@ import { Loader2Icon } from 'lucide-react-native'
 import { useEffect } from 'react'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
 
-const AnimatedLoader = Animated.createAnimatedComponent(Loader2Icon)
-
 function Spinner({ className, ...props }: React.ComponentProps<typeof Loader2Icon>) {
     const rotation = useSharedValue(0)
 
@@ -23,14 +21,12 @@ function Spinner({ className, ...props }: React.ComponentProps<typeof Loader2Ico
         transform: [{ rotate: `${rotation.value}deg` }],
     }))
 
+    // Xoay View bọc ngoài thay vì animate thẳng icon SVG: trên web, react-native-svg không nhận được
+    // style dạng mảng mà Reanimated cập nhật vào (lỗi "Failed to set an indexed property on CSSStyleDeclaration")
     return (
-        <AnimatedLoader
-            role="status"
-            aria-label="Loading"
-            className={cn('size-4', className)}
-            style={animatedStyle}
-            {...props}
-        />
+        <Animated.View role="status" aria-label="Loading" style={animatedStyle}>
+            <Loader2Icon className={cn('size-4', className)} {...props} />
+        </Animated.View>
     )
 }
 

@@ -1,4 +1,6 @@
+import Avatar from '@/components/avatar'
 import MarkdownRenderer from '@/components/markdown-renderer'
+import { useOpenProfile } from '@/hooks/use-open-profile'
 import { QuestionModel } from '@/types/model/question.type'
 import { ArrowBigUp, MessageSquare } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
@@ -9,6 +11,8 @@ type QuestionCardProps = {
 }
 
 const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
+    const openProfile = useOpenProfile()
+
     return (
         <Pressable
             onPress={onPress}
@@ -49,9 +53,18 @@ const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
                 </View>
 
                 {question.author && (
-                    <Text className="text-xs text-slate-500" numberOfLines={1}>
-                        {question.author.full_name}
-                    </Text>
+                    <Pressable
+                        onPress={() => openProfile(question.author_id)}
+                        hitSlop={8}
+                        className="flex-shrink flex-row items-center gap-1.5"
+                        accessibilityRole="button"
+                        accessibilityLabel={`Xem hồ sơ ${question.author.full_name}`}
+                    >
+                        <Avatar uri={question.author.avatar_path} size={20} />
+                        <Text className="flex-shrink text-xs text-slate-500" numberOfLines={1}>
+                            {question.author.full_name}
+                        </Text>
+                    </Pressable>
                 )}
             </View>
         </Pressable>

@@ -9,7 +9,8 @@ import { Link, useRouter } from 'expo-router'
 import { Eye, EyeOff, MessageSquareQuote } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { Keyboard, Pressable, TouchableWithoutFeedback, View } from 'react-native'
+import { Pressable, View } from 'react-native'
+import DismissKeyboard from '@/components/dismiss-keyboard'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import KeyboardAwareScrollView from '@/components/keyboard-aware-scroll-view'
 import { toast } from 'sonner-native'
@@ -109,7 +110,7 @@ const ForgotPassword = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-background">
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <DismissKeyboard>
                 <KeyboardAwareScrollView
                     bottomOffset={24}
                     contentContainerClassName="flex-grow justify-center py-5 px-5 gap-[15px]"
@@ -261,7 +262,7 @@ const ForgotPassword = () => {
                             )}
                         </View>
 
-                        {errorMessage && <Text className="text-destructive text-sm mt-3">{errorMessage}</Text>}
+                        {!!errorMessage && <Text className="text-destructive text-sm mt-3">{errorMessage}</Text>}
 
                         <Button
                             className="mt-8 h-[45px] rounded-[10px] bg-black active:bg-black/90"
@@ -281,7 +282,7 @@ const ForgotPassword = () => {
                         </Text>
                     </View>
                 </KeyboardAwareScrollView>
-            </TouchableWithoutFeedback>
+            </DismissKeyboard>
         </SafeAreaView>
     )
 }

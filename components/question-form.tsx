@@ -5,7 +5,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ReactNode } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { Keyboard, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native'
+import { Text, TextInput, View } from 'react-native'
+import DismissKeyboard from '@/components/dismiss-keyboard'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import KeyboardAwareScrollView from '@/components/keyboard-aware-scroll-view'
 import { z } from 'zod'
@@ -50,7 +51,7 @@ const QuestionForm = ({
 
     return (
         <SafeAreaView className="flex-1">
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <DismissKeyboard>
                 <KeyboardAwareScrollView
                     bottomOffset={24}
                     contentContainerClassName="flex-grow py-5 px-5 gap-[15px]"
@@ -117,7 +118,7 @@ const QuestionForm = ({
                         {isSubmitting ? <Spinner /> : <Text className="text-white font-medium">{submitLabel}</Text>}
                     </Button>
                 </KeyboardAwareScrollView>
-            </TouchableWithoutFeedback>
+            </DismissKeyboard>
         </SafeAreaView>
     )
 }

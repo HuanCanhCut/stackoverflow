@@ -27,7 +27,10 @@ export const unstable_settings = {
 
 function RootNavigator() {
     const currentUser = useAppSelector(selectCurrentUser)
-    const [rootSegment] = useSegments()
+    const segments = useSegments()
+    const [rootSegment] = segments
+    // Màn chat cần toàn bộ chiều cao cho danh sách tin nhắn và ô nhập khi bàn phím mở
+    const isChatScreen = segments[1] === 'conversations' && segments[2] === '[id]'
 
     const dispatch = useAppDispatch()
 
@@ -58,7 +61,7 @@ function RootNavigator() {
                 <Stack.Screen name="(protected)" />
             </Stack>
 
-            {rootSegment !== '(auth)' && <BottomNavigation />}
+            {rootSegment !== '(auth)' && !isChatScreen && <BottomNavigation />}
 
             <SocketListener />
         </SafeAreaView>

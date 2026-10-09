@@ -73,7 +73,7 @@ const CommentInput = ({
 
     return (
         <View className="border-t border-[#e2e8f0] bg-white">
-            {replyingTo && (
+            {!!replyingTo && (
                 <View className="flex-row items-center justify-between px-3 pt-2">
                     <Text className="flex-1 text-xs text-muted-foreground" numberOfLines={1}>
                         Đang trả lời <Text className="font-semibold text-foreground">{replyingTo}</Text>

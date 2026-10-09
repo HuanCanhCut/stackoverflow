@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import MarkdownRenderer from '@/components/markdown-renderer'
 import Avatar from '@/components/avatar'
 import { cn } from '@/lib/utils'
+import { useOpenProfile } from '@/hooks/use-open-profile'
 
 export const ACTIVE_COLOR = '#f97316'
 const INACTIVE_COLOR = '#0f172a'
@@ -57,6 +58,7 @@ const PostItem = ({
     repliesExpanded = false,
     replyToName,
 }: PostItemProps) => {
+    const openProfile = useOpenProfile()
     const upvoted = post.my_vote === 1
     const downvoted = post.my_vote === -1
     const replyCount = post.reply_count ?? 0
@@ -107,11 +109,20 @@ const PostItem = ({
                         </View>
                         <View className="flex-1">
                             <View className="flex-row items-center gap-2">
-                                <Avatar uri={post.author?.avatar_path} />
-                                <View className="flex-1">
-                                    <Text className="font-medium">{post.author?.full_name}</Text>
-                                    <Text className="text-xs text-muted-foreground">{formatDate(post.created_at)}</Text>
-                                </View>
+                                <Pressable
+                                    onPress={() => openProfile(post.author_id)}
+                                    className="flex-1 flex-row items-center gap-2"
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Xem hồ sơ ${post.author?.full_name ?? ''}`}
+                                >
+                                    <Avatar uri={post.author?.avatar_path} />
+                                    <View className="flex-1">
+                                        <Text className="font-medium">{post.author?.full_name}</Text>
+                                        <Text className="text-xs text-muted-foreground">
+                                            {formatDate(post.created_at)}
+                                        </Text>
+                                    </View>
+                                </Pressable>
                                 {onDelete && (
                                     <Pressable
                                         className="p-2"
@@ -132,13 +143,13 @@ const PostItem = ({
                                         <Text className="text-sm font-medium text-red-700">
                                             Đã bị ẩn, chỉ bạn nhìn thấy nội dung này
                                         </Text>
-                                        {post.moderation_reason && (
+                                        {!!post.moderation_reason && (
                                             <Text className="text-xs text-red-600">{post.moderation_reason}</Text>
                                         )}
                                     </View>
                                 </View>
                             )}
-                            {replyToName && (
+                            {!!replyToName && (
                                 <View className="mt-2 flex-row items-center gap-1">
                                     <CornerDownRight size={12} color={MUTED_COLOR} />
                                     <Text className="text-xs text-muted-foreground">Trả lời {replyToName}</Text>

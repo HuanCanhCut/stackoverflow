@@ -1,5 +1,5 @@
 import { getNewToken } from '@/lib/axiosClient'
-import * as secureStorage from 'expo-secure-store'
+import * as secureStorage from '@/lib/secure-storage'
 import { io } from 'socket.io-client'
 
 // Gateway chạy cùng server với API nhưng không có prefix /api

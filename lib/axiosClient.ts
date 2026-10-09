@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
-import * as secureStorage from 'expo-secure-store'
+import * as secureStorage from '@/lib/secure-storage'
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL
 

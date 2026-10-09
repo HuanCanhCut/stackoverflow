@@ -1,12 +1,12 @@
+import { putFile, toS3ContentType } from '@/lib/upload'
 import { getPresignedUrls } from '@/services/attachmentServices'
-import { S3ContentType, S3Folder } from '@/types/model/attachment.type'
-import { File, UploadType } from 'expo-file-system'
+import { S3Folder } from '@/types/model/attachment.type'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
 import { ImagePlus, X } from 'lucide-react-native'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native'
-import ImageView from 'react-native-image-viewing'
+import ImageView from '@/components/image-viewer'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export type AttachmentItem = {
@@ -24,31 +24,6 @@ type AttachmentPickerProps = {
 
 const MAX_ATTACHMENTS = 10
 const MAX_SIZE_BYTES = 5 * 1024 * 1024
-
-const SUPPORTED_CONTENT_TYPES: string[] = Object.values(S3ContentType)
-
-const toS3ContentType = (mimeType: string | undefined): S3ContentType => {
-    if (mimeType && SUPPORTED_CONTENT_TYPES.includes(mimeType)) {
-        return mimeType as S3ContentType
-    }
-
-    return S3ContentType.JPEG
-}
-
-const putFile = async (uri: string, presignedUrl: string, contentType: string) => {
-    try {
-        const result = await new File(uri).upload(presignedUrl, {
-            httpMethod: 'PUT',
-            uploadType: UploadType.BINARY_CONTENT,
-            mimeType: contentType,
-            headers: { 'Content-Type': contentType },
-        })
-
-        return result.status >= 200 && result.status < 300
-    } catch {
-        return false
-    }
-}
 
 const AttachmentPicker = ({ attachments, onChange }: AttachmentPickerProps) => {
     const [isPicking, setIsPicking] = useState(false)

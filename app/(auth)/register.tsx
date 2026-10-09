@@ -8,11 +8,12 @@ import * as authServices from '@/services/authServices'
 import { getErrMessageFromAPI } from '@/utils/handleApiError'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from 'expo-router'
-import * as secureStorage from 'expo-secure-store'
+import * as secureStorage from '@/lib/secure-storage'
 import { Eye, EyeOff, MessageSquareQuote } from 'lucide-react-native'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { Keyboard, Pressable, TouchableWithoutFeedback, View } from 'react-native'
+import { Pressable, View } from 'react-native'
+import DismissKeyboard from '@/components/dismiss-keyboard'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import KeyboardAwareScrollView from '@/components/keyboard-aware-scroll-view'
 import { toast } from 'sonner-native'
@@ -86,7 +87,7 @@ const RegisterPage = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-background">
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <DismissKeyboard>
                 <KeyboardAwareScrollView
                     bottomOffset={24}
                     contentContainerClassName="flex-grow justify-center py-5 px-5 gap-[15px]"
@@ -212,7 +213,7 @@ const RegisterPage = () => {
                             )}
                         </View>
 
-                        {errorMessage && <Text className="text-destructive text-sm mt-3">{errorMessage}</Text>}
+                        {!!errorMessage && <Text className="text-destructive text-sm mt-3">{errorMessage}</Text>}
 
                         <Button
                             className="mt-8 h-[45px] rounded-[10px] bg-black active:bg-black/90"
@@ -230,7 +231,7 @@ const RegisterPage = () => {
                         </Text>
                     </View>
                 </KeyboardAwareScrollView>
-            </TouchableWithoutFeedback>
+            </DismissKeyboard>
         </SafeAreaView>
     )
 }
