@@ -12,3 +12,9 @@ export type GetQuestionRepliesResponse = ResponsePagination<QuestionModel[]>
 export type VoteQuestionResponse = ApiResponse<QuestionVoteModel>
 
 export type UpdateQuestionResponse = ApiResponse<QuestionModel>
+
+export type SearchByImageResponse = ApiResponse<{
+    // Câu truy vấn rút gọn từ chữ trong ảnh, dùng làm tham số search của GET /questions
+    query: string
+    extracted_text: string
+}>

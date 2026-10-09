@@ -4,16 +4,21 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { addSearchKeyword, clearSearchHistory, removeSearchKeyword } from '@/redux/reducers/searchHistorySlice'
 import { useAppDispatch, useAppSelector } from '@/redux/redux.type'
 import { selectSearchHistory } from '@/redux/selector'
-import { getQuestions } from '@/services/questionServices'
+import { getQuestions, searchQuestionsByImage } from '@/services/questionServices'
 import { GetQuestionsResponse } from '@/types/api_response/question.type'
 import handleApiError from '@/utils/handleApiError'
+import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import { ChevronRight, Clock, X } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native'
 
 // Số câu hỏi hiển thị trước khi bấm "Xem tất cả"
 const PREVIEW_LIMIT = 5
+
+// Khớp giới hạn kích thước và định dạng ảnh của API tìm kiếm bằng hình ảnh
+const IMAGE_SEARCH_MAX_SIZE_BYTES = 5 * 1024 * 1024
+const IMAGE_SEARCH_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 
 const SearchPage = () => {
     const router = useRouter()
@@ -23,6 +28,7 @@ const SearchPage = () => {
     const [query, setQuery] = useState('')
     const [questions, setQuestions] = useState<GetQuestionsResponse | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [isImageSearching, setIsImageSearching] = useState(false)
 
     const debouncedQuery = useDebounce(query.trim(), 500)
 
@@ -65,6 +71,58 @@ const SearchPage = () => {
 
     const saveKeyword = () => {
         dispatch(addSearchKeyword(query))
+    }
+
+    // Chọn ảnh rồi để server đọc chữ trong ảnh thành câu truy vấn. Điền câu truy vấn vào ô tìm kiếm
+    // (thay vì mở thẳng trang kết quả) để người dùng xem và sửa lại nếu server đọc chưa chuẩn
+    const searchByImage = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+        if (!permission.granted) {
+            Alert.alert('Cần quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh để tìm kiếm bằng hình ảnh.')
+            return
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+            // iOS: chuyển ảnh HEIC sang JPEG vì server chỉ nhận JPEG, PNG, WEBP
+            preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+        })
+
+        if (result.canceled) {
+            return
+        }
+
+        const asset = result.assets[0]
+        const mimeType = asset.mimeType ?? 'image/jpeg'
+
+        if (!IMAGE_SEARCH_MIME_TYPES.includes(mimeType)) {
+            Alert.alert('Định dạng không hỗ trợ', 'Chỉ hỗ trợ ảnh JPEG, PNG hoặc WEBP.')
+            return
+        }
+
+        if ((asset.fileSize ?? 0) > IMAGE_SEARCH_MAX_SIZE_BYTES) {
+            Alert.alert('Ảnh quá lớn', 'Ảnh tìm kiếm tối đa 5MB.')
+            return
+        }
+
+        try {
+            setIsImageSearching(true)
+
+            const res = await searchQuestionsByImage({
+                uri: asset.uri,
+                mimeType,
+                fileName: asset.fileName ?? `search-${Date.now()}.${mimeType.split('/')[1]}`,
+            })
+
+            setQuery(res.data.query)
+            dispatch(addSearchKeyword(res.data.query))
+        } catch (error) {
+            handleApiError(error)
+        } finally {
+            setIsImageSearching(false)
+        }
     }
 
     const openQuestion = (id: number) => {
@@ -160,7 +218,14 @@ const SearchPage = () => {
 
     return (
         <View className="flex-1 bg-slate-50">
-            <Header variant="search" searchValue={query} onSearchChange={setQuery} onSearchSubmit={saveKeyword} />
+            <Header
+                variant="search"
+                searchValue={query}
+                onSearchChange={setQuery}
+                onSearchSubmit={saveKeyword}
+                onImageSearch={searchByImage}
+                isImageSearching={isImageSearching}
+            />
 
             {!debouncedQuery ? (
                 renderRecentSearches()

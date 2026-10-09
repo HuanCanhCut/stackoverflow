@@ -4,6 +4,7 @@ import {
     GetQuestionRepliesResponse,
     GetQuestionResponse,
     GetQuestionsResponse,
+    SearchByImageResponse,
     UpdateQuestionResponse,
     VoteQuestionResponse,
 } from '@/types/api_response/question.type'
@@ -21,6 +22,28 @@ export const getQuestions = async ({
 }): Promise<GetQuestionsResponse> => {
     const res = await axiosClient.get('/questions', {
         params: { search, tag_id: tagId, page, per_page: perPage },
+    })
+
+    return res.data
+}
+
+// Gửi ảnh dạng multipart, server đọc chữ trong ảnh rồi trả về câu truy vấn để tìm kiếm
+export const searchQuestionsByImage = async ({
+    uri,
+    mimeType,
+    fileName,
+}: {
+    uri: string
+    mimeType: string
+    fileName: string
+}): Promise<SearchByImageResponse> => {
+    const formData = new FormData()
+
+    // React Native nhận object { uri, name, type } thay cho Blob khi append file
+    formData.append('image', { uri, name: fileName, type: mimeType } as unknown as Blob)
+
+    const res = await axiosClient.post('/questions/search-by-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
     })
 
     return res.data
