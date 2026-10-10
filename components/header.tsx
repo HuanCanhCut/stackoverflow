@@ -1,6 +1,6 @@
 import { Input } from '@/components/ui/input'
 import { useRouter } from 'expo-router'
-import { ArrowLeft, MessageCircle, ScanSearch, Search } from 'lucide-react-native'
+import { ArrowLeft, ScanSearch, Search } from 'lucide-react-native'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
 const BackButton = ({ onPress }: { onPress: () => void }) => (
@@ -84,17 +84,6 @@ const Header = ({
                     accessibilityLabel="Tìm kiếm"
                 >
                     <Search color="#0f172a" size={22} />
-                </Pressable>
-
-                {/* Chưa đăng nhập thì ProtectedLayout tự chuyển sang trang đăng nhập */}
-                <Pressable
-                    onPress={() => router.push('/(protected)/conversations')}
-                    hitSlop={8}
-                    className="p-2"
-                    accessibilityRole="button"
-                    accessibilityLabel="Tin nhắn"
-                >
-                    <MessageCircle color="#0f172a" size={22} />
                 </Pressable>
             </View>
         </View>

@@ -1,7 +1,7 @@
 import { useAppSelector } from '@/redux/redux.type'
 import { selectUnseenNotificationCount } from '@/redux/selector'
 import { type Href, usePathname, useRouter } from 'expo-router'
-import { Bell, CirclePlus, Home, Search, User } from 'lucide-react-native'
+import { Bell, CirclePlus, Home, MessageCircle, Search, User } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 
 export const BOTTOM_NAVIGATION_HEIGHT = 56
@@ -15,6 +15,7 @@ const navigationItems: {
     { href: '/(public)', pathname: '/', title: 'Home', icon: Home },
     { href: '/(public)/search', pathname: '/search', title: 'Search', icon: Search },
     { href: '/(protected)/ask', pathname: '/ask', title: 'Đặt câu hỏi', icon: CirclePlus },
+    { href: '/(protected)/conversations', pathname: '/conversations', title: 'Tin nhắn', icon: MessageCircle },
     { href: '/(protected)/notifications', pathname: '/notifications', title: 'Thông báo', icon: Bell },
     { href: '/(protected)/profile', pathname: '/profile', title: 'Hồ sơ', icon: User },
 ]
@@ -52,7 +53,9 @@ const BottomNavigation = () => {
                                 <View className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full border border-white bg-red-500" />
                             ) : null}
                         </View>
-                        <Text style={{ color, fontSize: 11, fontWeight: '500' }}>{item.title}</Text>
+                        <Text style={{ color, fontSize: 11, fontWeight: '500' }} numberOfLines={1}>
+                            {item.title}
+                        </Text>
                     </Pressable>
                 )
             })}

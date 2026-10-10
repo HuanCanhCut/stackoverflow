@@ -1,15 +1,18 @@
 import Avatar from '@/components/avatar'
+import { Input } from '@/components/ui/input'
+import UserSearchList from '@/components/user-search-list'
 import { socket } from '@/lib/socket'
 import { cn } from '@/lib/utils'
 import { useAppSelector } from '@/redux/redux.type'
 import { selectCurrentUser } from '@/redux/selector'
 import * as conversationServices from '@/services/conversationServices'
 import { ConversationModel, MessageModel } from '@/types/model/conversation.type'
+import { UserModel } from '@/types/model/user.type'
 import { SocketEvent } from '@/types/socket.type'
 import formatRelativeTime from '@/utils/formatRelativeTime'
 import handleApiError from '@/utils/handleApiError'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { MessageCircleOff } from 'lucide-react-native'
+import { MessageCircleOff, Search, X } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native'
 
@@ -33,6 +36,11 @@ const ConversationsPage = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [loaded, setLoaded] = useState(false)
+
+    // Có từ khóa thì thay danh sách hội thoại bằng kết quả tìm người để nhắn tin mới
+    const [searchQuery, setSearchQuery] = useState('')
+    const [openingUserId, setOpeningUserId] = useState<number | null>(null)
+    const isSearchMode = searchQuery.trim().length > 0
 
     const isFetchingRef = useRef(false)
 
@@ -86,6 +94,25 @@ const ConversationsPage = () => {
         if (isFetchingRef.current || page >= totalPages) return
 
         loadPage(page + 1)
+    }
+
+    // Chọn một người trong kết quả tìm kiếm: lấy hội thoại sẵn có hoặc tạo mới rồi mở màn chat.
+    // Hội thoại mới tạo chưa có tin nhắn nên server không trả về trong danh sách cho tới khi nhắn tin đầu tiên
+    const openChatWithUser = async (user: UserModel) => {
+        if (openingUserId) return
+
+        setOpeningUserId(user.id)
+
+        try {
+            const res = await conversationServices.findOrCreateConversation(user.id)
+
+            setSearchQuery('')
+            router.push({ pathname: '/(protected)/conversations/[id]', params: { id: res.data.id } })
+        } catch (error) {
+            handleApiError(error)
+        } finally {
+            setOpeningUserId(null)
+        }
     }
 
     const renderItem = ({ item }: { item: ConversationModel }) => {
@@ -142,30 +169,63 @@ const ConversationsPage = () => {
         <View className="flex-1 bg-white">
             <Text className="px-4 pb-2 pt-4 text-xl font-bold text-slate-900">Tin nhắn</Text>
 
-            <FlatList
-                data={items}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderItem}
-                ItemSeparatorComponent={() => <View className="ml-[76px] h-px bg-slate-100" />}
-                onEndReached={loadMore}
-                onEndReachedThreshold={0.5}
-                refreshing={isRefreshing}
-                onRefresh={refresh}
-                ListEmptyComponent={
-                    !loaded ? (
-                        <ActivityIndicator size="small" className="mt-10" />
-                    ) : (
-                        <View className="mt-16 items-center gap-2 px-6">
-                            <MessageCircleOff size={40} color="#94a3b8" />
-                            <Text className="text-center text-slate-500">
-                                Chưa có tin nhắn nào. Vào trang cá nhân của ai đó và bấm &quot;Nhắn tin&quot; để bắt đầu
-                                trò chuyện
-                            </Text>
-                        </View>
-                    )
-                }
-                ListFooterComponent={isLoading && page > 0 ? <ActivityIndicator size="small" className="py-3" /> : null}
-            />
+            <View className="mx-4 mb-2 justify-center">
+                <View className="pointer-events-none absolute left-3 z-10">
+                    <Search size={18} color="#94a3b8" />
+                </View>
+
+                <Input
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Tìm người để nhắn tin..."
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="search"
+                    className="rounded-full bg-slate-100 pl-10 pr-10"
+                />
+
+                {isSearchMode && (
+                    <Pressable
+                        onPress={() => setSearchQuery('')}
+                        hitSlop={8}
+                        className="absolute right-3"
+                        accessibilityRole="button"
+                        accessibilityLabel="Xóa tìm kiếm"
+                    >
+                        <X size={18} color="#64748b" />
+                    </Pressable>
+                )}
+            </View>
+
+            {isSearchMode ? (
+                <UserSearchList query={searchQuery} onSelect={openChatWithUser} openingUserId={openingUserId} />
+            ) : (
+                <FlatList
+                    data={items}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={renderItem}
+                    ItemSeparatorComponent={() => <View className="ml-[76px] h-px bg-slate-100" />}
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.5}
+                    refreshing={isRefreshing}
+                    onRefresh={refresh}
+                    ListEmptyComponent={
+                        !loaded ? (
+                            <ActivityIndicator size="small" className="mt-10" />
+                        ) : (
+                            <View className="mt-16 items-center gap-2 px-6">
+                                <MessageCircleOff size={40} color="#94a3b8" />
+                                <Text className="text-center text-slate-500">
+                                    Chưa có tin nhắn nào. Tìm tên một người ở ô phía trên để bắt đầu trò chuyện
+                                </Text>
+                            </View>
+                        )
+                    }
+                    ListFooterComponent={
+                        isLoading && page > 0 ? <ActivityIndicator size="small" className="py-3" /> : null
+                    }
+                />
+            )}
         </View>
     )
 }
